@@ -1,9 +1,15 @@
-(ns wonko-client.kafka.produce
+(ns wonko-client.kafka-producer
   (:require [cheshire.core :as json]
             [clj-kafka.new.producer :as kp])
   (:import [org.apache.kafka.common.serialization Serializer]
            [org.apache.kafka.clients.producer Producer]
            [com.fasterxml.jackson.core JsonGenerationException]))
+
+(defonce ^Producer producer
+  (atom nil))
+
+(defonce ^String topic
+  (atom ""))
 
 (deftype Jsonizer []
   Serializer
@@ -11,9 +17,6 @@
   (serialize [_ topic value]
     (.getBytes (json/generate-string value)))
   (close [_]))
-
-(defonce ^Producer producer (atom nil))
-(defonce topic (atom ""))
 
 (defn create-producer [config]
   (kp/producer config
@@ -29,19 +32,7 @@
      ;; message not sent
      false)))
 
-(defn counter [metric-name properties & {:as options}]
-  (send-message {:metric-type :counter
-                 :metric-name metric-name
-                 :properties properties
-                 :options options}))
-
-(defn gauge [metric-name properties metric-value & {:as options}]
-  (send-message {:metric-type :gauge
-                 :metric-name metric-name
-                 :properties properties
-                 :metric-value metric-value
-                 :options options}))
-
 (defn init! [config]
   (reset! topic (:topic config))
-  (reset! producer (create-producer (:producer config))))
+  (reset! producer (create-producer (:producer config)))
+  nil)

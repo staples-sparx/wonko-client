@@ -5,11 +5,11 @@
            [org.apache.kafka.clients.producer Producer]
            [com.fasterxml.jackson.core JsonGenerationException]))
 
-(defonce ^Producer producer
+(defonce producer
   (atom nil))
 
-(def ^String topic
-  "wonko-events")
+(defonce topic
+  (atom "wonko-events"))
 
 (deftype Jsonizer []
   Serializer
@@ -25,12 +25,15 @@
 
 (defn send-message [message]
   (try
-   (let [record (kp/record topic message)]
+   (let [record (kp/record @topic message)]
      @(kp/send @producer record)
      true)
    (catch JsonGenerationException e
      ;; message not sent
      false)))
+
+(defn change-topic! [topic-name]
+  (reset! topic topic-name))
 
 (defn init! [config]
   (reset! producer (create-producer config))

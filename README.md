@@ -21,10 +21,10 @@ So you can pull from the sparx maven repo:
 (require '[wonko-client.core :as wonko])
 
 ;; init
-(wonko/init! {:topic "kafka-topic"
-              :producer {"bootstrap.servers" "127.0.0.1:9092"
-                         "compression.type" "gzip"
-                         "linger.ms" 5}})
+(wonko/init! "service-name"
+             {"bootstrap.servers" "127.0.0.1:9092"
+              "compression.type" "gzip"
+              "linger.ms" 5})
 ;; monitor
 (wonko/counter :this-event-happened nil)
 (wonko/counter :some-job {:status :start})

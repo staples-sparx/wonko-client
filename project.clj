@@ -1,4 +1,4 @@
-(defproject staples-sparx/wonko-client "0.1.3"
+(defproject staples-sparx/wonko-client "0.1.4"
   :local-repo ".m2"
   :description "Clojure client for the Wonko service"
   :url "git@github.com:staples-sparx/wonko-client.git"
@@ -9,7 +9,7 @@
                  [clj-kafka "0.3.4"]
                  [org.clojure/clojure "1.7.0"]
                  [org.clojure/java.jmx "0.3.1"]
-                 [sigmund "0.1.1"]]
+                 [org.clojars.srihari/sigmund "0.2.0"]]
   :plugins [[s3-wagon-private "1.2.0"]]
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

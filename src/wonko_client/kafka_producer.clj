@@ -8,9 +8,6 @@
 (defonce producer
   (atom nil))
 
-(defonce topic
-  (atom "wonko-events"))
-
 (deftype Jsonizer []
   Serializer
   (configure [_ _ _ ])
@@ -23,17 +20,14 @@
                (kp/string-serializer)
                (Jsonizer.)))
 
-(defn send-message [message]
+(defn send-message [message topic]
   (try
-   (let [record (kp/record @topic message)]
+   (let [record (kp/record topic message)]
      @(kp/send @producer record)
      true)
    (catch JsonGenerationException e
      ;; message not sent
      false)))
-
-(defn change-topic! [topic-name]
-  (reset! topic topic-name))
 
 (defn init! [config]
   (reset! producer (create-producer config))

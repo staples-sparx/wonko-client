@@ -6,7 +6,7 @@ Use this to publish monitoring events to Wonko from your project.
 
 Add leiningen dependency:
 ```clojure
-[staples-sparx/wonko-client "0.1.1-SNAPSHOT"]
+[staples-sparx/wonko-client "0.1.0"]
 ```
 
 So you can pull from the sparx maven repo:
@@ -29,7 +29,14 @@ So you can pull from the sparx maven repo:
 (wonko/counter :this-event-happened nil)
 (wonko/counter :some-job {:status :start})
 (wonko/gauge :some-job-stats {:type :success} 107)
-(wonko/counter :some-job {:status :error} :alert true)
+(wonko/counter :some-job {:status :error})
+
+;; send alerts
+(wonko/alert :some-alert-name {:alert :info})
+
+;; start monitoring host metrics
+(require '[wonko-client.host-metrics :as w-host-metrics])
+(w-host-metrics/start)
 ```
 
 ## License

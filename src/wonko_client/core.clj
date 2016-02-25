@@ -2,8 +2,12 @@
   (:require [wonko-client.kafka-producer :as kp]
             [wonko-client.util :as util]))
 
-(defonce ^String service
+(defonce service
   (atom ""))
+
+(defonce topics
+  (atom {:events "wonko-events"
+         :alerts "wonko-alerts"}))
 
 (defn metadata []
   {:host (util/hostname)
@@ -17,7 +21,7 @@
                     :metric-name metric-name
                     :properties properties
                     :options options}
-                   "wonko-events"))
+                   (:events @topics)))
 
 (defn gauge [metric-name properties metric-value & {:as options}]
   (kp/send-message {:service @service
@@ -27,7 +31,7 @@
                     :properties properties
                     :metric-value metric-value
                     :options options}
-                   "wonko-events"))
+                   (:events @topics)))
 
 (defn alert [alert-name alert-info]
   (kp/send-message {:service @service
@@ -37,7 +41,11 @@
                     :metric-name alert-name
                     :properties {}
                     :metric-type :counter}
-                   "wonko-alerts"))
+                   (:alerts @topics)))
+
+(defn set-topics! [events-topic alerts-topic]
+  (reset! topics {:events events-topic
+                  :alerts alerts-topic}))
 
 (defn init! [service-name kafka-config]
   (reset! service service-name)

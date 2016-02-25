@@ -5,17 +5,8 @@
 
 (defonce daemon (atom nil))
 
-(defn get-events []
-  (mapcat (fn [[metric-class metrics]]
-            (collect/jmx->wonko metric-class metrics))
-          {:memory (collect/memory)
-           :cpu (collect/cpu)
-           :threading (collect/threading)
-           :garbage-collection (collect/garbage-collection)
-           :memory-pools (collect/memory-pools)}))
-
 (defn send-wonko-events []
-  (doseq [event (get-events)]
+  (doseq [event (collect/events)]
     (apply client/gauge event)))
 
 (defn start

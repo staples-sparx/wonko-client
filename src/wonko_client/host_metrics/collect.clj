@@ -5,60 +5,88 @@
 (defn mbean-names []
   (map #(str %) (jmx/mbean-names "*:*")))
 
-(defn threading []
-  (select-keys (jmx/mbean "java.lang:type=Threading")
-               [:ThreadCount
-                :PeakThreadCount
-                :DaemonThreadCount
-                :CurrentThreadCpuTime
-                :TotalStartedThreadCount
-                :CurrentThreadUserTime]))
-
-(defn cpu []
-  (select-keys (jmx/mbean "java.lang:type=OperatingSystem")
-               [:ProcessCpuLoad
-                :OpenFileDescriptorCount
-                :TotalSwapSpaceSize
-                :CommittedVirtualMemorySize
-                :ProcessCpuTime
-                :SystemCpuLoad
-                :SystemLoadAverage
-                :FreePhysicalMemorySize
-                :TotalPhysicalMemorySize
-                :FreeSwapSpaceSize
-                :AvailableProcessors]))
-
-(defn memory []
-  (select-keys (jmx/mbean "java.lang:type=Memory")
-               [:HeapMemoryUsage :NonHeapMemoryUsage]))
-
-(defn memory-pools []
-  (into {}
-        (for [mbean-name (filter #(re-find #"MemoryPool" %) (mbean-names))
-              :let [metrics (jmx/mbean mbean-name)]]
-          {(:Name metrics) (select-keys metrics [:PeakUsage :CollectionUsage :Usage])})))
-
-(defn garbage-collection []
-  (->> (filter #(re-find #"Garbage" %) (mbean-names))
-       (map (fn [mbean-name]
-              (let [metrics (jmx/mbean mbean-name)]
-                {(:Name metrics)
-                 {:LastGcInfo
-                  {:GcThreadCount (get-in metrics [:LastGcInfo :GcThreadCount])
-                   :duration  (get-in metrics [:LastGcInfo :duration])}
-                  :CollectionCount (:CollectionCount metrics)
-                  :CollectionTime (:CollectionTime metrics)}})))
+(defn group-metrics-by-name [re]
+  (->> (mbean-names)
+       (filter #(re-find re %))
+       (map (fn [n] (let [m (jmx/mbean n)] [(:Name m) m])))
        (into {})))
 
-(defn wonko-name
-  ([metric-class metric-name]
-     (s/join "-" [(name metric-class) (name metric-name)]))
-  ([prefix metric-class metric-name]
-     (s/join "-" [prefix (name metric-class) (name metric-name)])))
+(defn threading []
+  {:prefix "threading"
+   :metrics (jmx/mbean "java.lang:type=Threading")
+   :paths [[:DaemonThreadCount]
+           [:PeakThreadCount]
+           [:ThreadCount]
+           [:TotalStartedThreadCount]]
+   :property-names []})
 
-(defn jmx->wonko [metric-class metrics]
-  (mapcat (fn [[metric-name metric-value]]
-            (if (map? metric-value)
-              (jmx->wonko (wonko-name metric-class metric-name) metric-value)
-              [[(wonko-name "jvm" metric-class metric-name) nil metric-value]]))
-          metrics))
+(defn cpu []
+  {:prefix "cpu"
+   :metrics (jmx/mbean "java.lang:type=OperatingSystem")
+   :paths [[:AvailableProcessors]
+           [:CommittedVirtualMemorySize]
+           [:FreePhysicalMemorySize]
+           [:FreeSwapSpaceSize]
+           [:OpenFileDescriptorCount]
+           [:ProcessCpuLoad]
+           [:ProcessCpuTime]
+           [:SystemCpuLoad]
+           [:SystemLoadAverage]
+           [:TotalPhysicalMemorySize]
+           [:TotalSwapSpaceSize]]
+   :property-names []})
+
+(defn memory []
+  {:prefix "memory"
+   :metrics (jmx/mbean "java.lang:type=Memory")
+   :paths [[:HeapMemoryUsage :committed]
+           [:HeapMemoryUsage :init]
+           [:HeapMemoryUsage :max]
+           [:HeapMemoryUsage :used]
+           [:NonHeapMemoryUsage :committed]
+           [:NonHeapMemoryUsage :init]
+           [:NonHeapMemoryUsage :max]
+           [:NonHeapMemoryUsage :used]]
+   :property-names ["memory-type"]})
+
+(defn memory-pools []
+  (let [metrics (group-metrics-by-name #"MemoryPool")]
+    {:prefix "memory-pool"
+     :metrics metrics
+     :paths (mapcat (fn [pool-name]
+                      [[pool-name :CollectionUsage :committed]
+                       [pool-name :CollectionUsage :max]
+                       [pool-name :CollectionUsage :used]
+                       [pool-name :PeakUsage :committed]
+                       [pool-name :PeakUsage :max]
+                       [pool-name :PeakUsage :used]
+                       [pool-name :Usage :committed]
+                       [pool-name :Usage :max]
+                       [pool-name :Usage :used]])
+                    (keys metrics))
+     :property-names ["pool" "usage-type"]}))
+
+(defn garbage-collection []
+  (let [metrics (group-metrics-by-name #"Garbage")]
+    {:prefix "gc"
+     :metrics metrics
+     :paths (mapcat (fn [gc-type]
+                      [[gc-type :LastGcInfo :GcThreadCount]
+                       [gc-type :LastGcInfo :duration]
+                       [gc-type :CollectionCount]
+                       [gc-type :CollectionTime]])
+                    (keys metrics))
+     :property-names ["gc-type" "gc-info"]}))
+
+(defn ->wonko [{:keys [prefix metrics paths property-names]}]
+  (for [path paths
+        :let [metric-value (get-in metrics path)
+              metric-name (s/join "-" ["jvm" prefix (name (last path))])
+              property-values (map name (drop-last path))
+              properties (zipmap property-names property-values)]]
+    [metric-name properties metric-value]))
+
+(defn events []
+  (->> [(threading) (cpu) (memory) (memory-pools) (garbage-collection)]
+       (map ->wonko)
+       (apply concat)))

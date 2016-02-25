@@ -21,10 +21,13 @@
                     :options options}
                    "wonko-events"))
 
-(defn alert [name properties]
+(defn alert [alert-name alert-info]
   (kp/send-message {:service @service
-                    :alert-name name
-                    :properties properties}
+                    :alert-name alert-name
+                    :alert-info alert-info
+                    :metric-type :counter
+                    :metric-name alert-name
+                    :properties {}}
                    "wonko-alerts"))
 
 (defn init! [service-name kafka-config]

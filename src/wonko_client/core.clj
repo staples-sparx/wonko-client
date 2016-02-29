@@ -47,6 +47,6 @@
   (reset! topics {:events events-topic
                   :alerts alerts-topic}))
 
-(defn init! [service-name kafka-config]
+(defn init! [service-name kafka-config & {:as options}]
   (reset! service service-name)
-  (kp/init! kafka-config))
+  (kp/init! kafka-config options))

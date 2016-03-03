@@ -7,7 +7,7 @@ LEIN = HTTP_CLIENT="curl --insecure -f -L -o" lein
 
 LEIN_ENV=ARCHIVA_USERNAME="${ARCHIVA_USERNAME}" ARCHIVA_PASSPHRASE="${ARCHIVA_PASSPHRASE}"
 
-all: lein-deps
+all: deps lein-deps
 
 distclean:
 	rm -rf ./.m2
@@ -30,3 +30,12 @@ tests: lein-deps
 
 deploy:
 	$(LEIN_ENV) $(LEIN) deploy runa-maven-s3
+
+deps:
+	./bin/deps install all
+
+deps-check:
+	./bin/deps check all
+
+deps-pull:
+	git submodule update --init

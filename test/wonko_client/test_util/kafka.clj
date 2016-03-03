@@ -2,20 +2,22 @@
   (require [clj-kafka.admin :as admin]
            [clj-kafka.zk :as zk]))
 
-(defn create-topic [topic]
-  (with-open [zk (admin/zk-client (config/zookeeper))]
+(defn create-topic [topic zookeeper]
+  (with-open [zk (admin/zk-client zookeeper)]
     (if-not (admin/topic-exists? zk topic)
       (admin/create-topic zk
                           topic
-                          (config/lookup :kafka :new-topic)))))
+                          {:partitions 1
+                           :replication-factor 1
+                           :config {"cleanup.policy" "compact"}}))))
 
-(defn delete-topic [topic]
-  (with-open [zk (admin/zk-client (config/zookeeper))]
+(defn delete-topic [topic zookeeper]
+  (with-open [zk (admin/zk-client zookeeper)]
     (admin/delete-topic zk topic)))
 
-(defn list-topics []
-  (zk/topics {"zookeeper.connect" (config/zookeeper)}))
+(defn list-topics [zookeeper]
+  (zk/topics {"zookeeper.connect" zookeeper}))
 
-(defn delete-all-topics []
+(defn delete-all-topics [zookeeper]
   (for [topic (list-topics)]
-    (delete-topic topic)))
+    (delete-topic topic zookeeper)))

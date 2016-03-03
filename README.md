@@ -53,9 +53,25 @@ Host metrics monitoring is built in, you just have to start it.
 (w-host-metrics/start)
 ```
 
-## License
+## Metric types
+### Counter
+A counter is a simple incrementing number. It only ever goes up. You can compute the rate (number of events per second) at which a counter is changing, and that is usually more useful than the value itself.
 
-Copyright © 2016 FIXME
+They are useful for counting things like requests, task started/ended, errors/alerts, etc. Consider adding counters along with log statements, and failure occurrences. If the value can go down, pick a gauge.
+### Gauge
+A gauge is a numerical value that can go up or down. Consider using a gauge to monitor in-progress requests, queue size, current thread count, pending jobs, batch-job timing, etc. Averages and rates of gauges are usually meaningless.
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Not every value of a gauge is reported on. If you want to track a series of values, use a Stream instead.
+### Stream
+A stream is series of values, which are observations of a metric. All values in a stream are used for sampling and aggregating. You can use streams to compute rate, distributions/quantiles and aggregates.
+
+Typically, request latencies, feed lengths, SLA computations, and any kind of performance measurement would warrant a stream.
+
+## Properties
+These are characteristics of events being monitored. URIs, response statuses, different stages in pieline, etc can be tracked using properties. You can filter metrics using properties, and aggregate across them.
+
+## Alerts
+An alert is used to notify people via pager-duty, email or slack. Consider using this for any failure scenario for which you want to be notified. An alert is also implicitly a counter, so you can use it to get stats on alerts over time.
+
+For (more comprehensive) alerts based on statistical or historical data, consider configuring them through prometheus.
+

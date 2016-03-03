@@ -9,7 +9,7 @@
   (atom nil))
 
 (defonce exception-handler
-  (atom nil))
+  (atom (constantly nil)))
 
 (deftype Jsonizer []
   Serializer
@@ -28,17 +28,17 @@
         :response response
         :ex (bean ex)}))
 
-(defn send-callback [response ex]
-  (when ex
-    (exception-handler response ex)))
+(defn callback  [response exception]
+  (when exception
+    (@exception-handler response exception)))
 
 (defn send-message [message topic]
   (try
     (let [record (kp/record topic message)]
-      (kp/send @producer record exception-handler)
+      (kp/send @producer record callback)
       true)
-    (catch JsonGenerationException e
-      ;; message not sent
+    (catch JsonGenerationException exception
+      (@exception-handler nil exception)
       false)))
 
 (defn init! [config options]

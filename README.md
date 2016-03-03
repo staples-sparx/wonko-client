@@ -75,3 +75,7 @@ An alert is used to notify people via pager-duty, email or slack. Consider using
 
 For (more comprehensive) alerts based on statistical or historical data, consider configuring them through prometheus.
 
+## License
+Copyright © 2016 Staples Sparx.
+Released under the MIT license.
+http://mit-license.org/

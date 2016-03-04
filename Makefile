@@ -22,7 +22,7 @@ env:
 	@echo "ARCHIVA_USERNAME=$(ARCHIVA_USERNAME)"
 	@echo "ARCHIVA_PASSPHRASE=$(ARCHIVA_PASSPHRASE)"
 
-ci: distclean
+ci:
 	make tests
 
 tests: lein-deps

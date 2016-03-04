@@ -9,7 +9,7 @@ Add leiningen dependency:
 [staples-sparx/wonko-client "0.1.0"]
 ```
 
-It is hosted in the sparx maven repo, so you'll have to add this to `project.clj`:
+It is hosted in SparX s3 maven, so you'll have to add this to `project.clj`:
 ```
 :repositories {"runa-maven-s3" {:url "s3p://runa-maven/releases/"
                                 :username [:gpg :env/archiva_username]
@@ -61,7 +61,7 @@ They are useful for counting things like requests, task started/ended, errors/al
 ### Gauge
 A gauge is a numerical value that can go up or down. Consider using a gauge to monitor in-progress requests, queue size, current thread count, pending jobs, batch-job timing, etc. Averages and rates of gauges are usually meaningless.
 
-Not every value of a gauge is reported on. If you want to track a series of values, use a Stream instead.
+Not every value of a gauge is reported on (because prometheus polls the data from wonko, gauge changes between polls are lost). If you want to track a series of values, use a Stream instead.
 ### Stream
 A stream is series of values, which are observations of a metric. All values in a stream are used for sampling and aggregating. You can use streams to compute rate, distributions/quantiles and aggregates.
 
@@ -69,6 +69,9 @@ Typically, request latencies, feed lengths, SLA computations, and any kind of pe
 
 ## Properties
 These are characteristics of events being monitored. URIs, response statuses, different stages in pieline, etc can be tracked using properties. You can filter metrics using properties, and aggregate across them.
+
+Ensure that property values are a bounded set. Properties are intended to be metadata for a given metric - if you want to send unbounded _values_ to Wonko, make them the primary metric value.
+For example, "Response Status Code" can be a property, since there are a finite number of values it can take. "Response time" should not be a property, but a primary metric value.
 
 ## Alerts
 An alert is used to notify people via pager-duty, email or slack. Consider using this for any failure scenario for which you want to be notified. An alert is also implicitly a counter, so you can use it to get stats on alerts over time.

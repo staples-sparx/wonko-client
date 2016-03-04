@@ -32,7 +32,7 @@
   (when exception
     (@exception-handler response exception)))
 
-(defn send-message [message topic]
+(defn send [message topic]
   (try
     (let [record (kp/record topic message)]
       (kp/send @producer record callback)

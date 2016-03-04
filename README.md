@@ -30,6 +30,7 @@ So you can pull from the sparx maven repo:
 (wonko/counter :some-job {:status :start})
 (wonko/gauge :some-job-stats {:type :success} 107)
 (wonko/counter :some-job {:status :error})
+(wonko/stream :get-user-token {:status :200} 5)
 
 ;; send alerts
 (wonko/alert :some-alert-name {:alert :info})

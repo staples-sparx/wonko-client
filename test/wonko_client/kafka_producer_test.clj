@@ -22,7 +22,7 @@
       (kafka/create-topic topic-name zookeeper)
 
       (sut/init! kafka-config {:exception-handler exception-handler})
-      (is (sut/send-message "message" topic-name))
+      (is (sut/send "message" topic-name))
       (is (empty? @exceptions))
 
       (kafka/delete-topic topic-name zookeeper)))
@@ -36,7 +36,7 @@
 
       (sut/init! kafka-config {:exception-handler exception-handler})
       (.close @sut/producer)
-      (is (sut/send-message "message" topic-name))
+      (is (sut/send "message" topic-name))
       (is (not (empty? @exceptions)))
       (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions))))
 
@@ -50,7 +50,7 @@
       (kafka/create-topic topic-name zookeeper)
 
       (sut/init! kafka-config {:exception-handler exception-handler})
-      (is (not (sut/send-message java.lang.String topic-name)))
+      (is (not (sut/send java.lang.String topic-name)))
       (is (not (empty? @exceptions)))
       (is (re-find #"Cannot JSON encode" (.getMessage (first @exceptions))))
 
@@ -68,7 +68,7 @@
       (with-redefs [sut/default-exception-handler exception-handler]
         (sut/init! kafka-config {:exception-handler nil})
         (.close @sut/producer)
-        (is (sut/send-message "message" topic-name))
+        (is (sut/send "message" topic-name))
         (is (not (empty? @exceptions)))
         (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions)))))
 

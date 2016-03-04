@@ -20,7 +20,7 @@
                (kp/string-serializer)
                (Jsonizer.)))
 
-(defn send-message [message topic]
+(defn send [message topic]
   (try
    (let [record (kp/record topic message)]
      @(kp/send @producer record)

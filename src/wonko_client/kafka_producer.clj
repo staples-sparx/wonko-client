@@ -8,6 +8,9 @@
 (defonce producer
   (atom nil))
 
+(defonce exception-handler
+  (atom (constantly nil)))
+
 (deftype Jsonizer []
   Serializer
   (configure [_ _ _ ])
@@ -20,15 +23,26 @@
                (kp/string-serializer)
                (Jsonizer.)))
 
+(defn default-exception-handler [response ex]
+  (prn {:msg "Unable to send message to kafka."
+        :response response
+        :ex (bean ex)}))
+
+(defn callback  [response exception]
+  (when exception
+    (@exception-handler response exception)))
+
 (defn send [message topic]
   (try
-   (let [record (kp/record topic message)]
-     @(kp/send @producer record)
-     true)
-   (catch JsonGenerationException e
-     ;; message not sent
-     false)))
+    (let [record (kp/record topic message)]
+      (kp/send @producer record callback)
+      true)
+    (catch JsonGenerationException exception
+      (@exception-handler nil exception)
+      false)))
 
-(defn init! [config]
+(defn init! [config options]
   (reset! producer (create-producer config))
+  (reset! exception-handler (or (:exception-handler options)
+                                default-exception-handler))
   nil)

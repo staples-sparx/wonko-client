@@ -12,6 +12,6 @@
     (swap! metric->label-names maybe-set-label-names-for-metric service metric-name label-names)
     (= label-names (@metric->label-names [service metric-name]))))
 
-(defn validate [message]
+(defn validate! [message]
   (when-not (valid? message)
     (throw (IllegalArgumentException. "Cannot change the label names for a metric."))))

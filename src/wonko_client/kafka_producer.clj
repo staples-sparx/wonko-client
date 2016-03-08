@@ -1,10 +1,8 @@
 (ns wonko-client.kafka-producer
   (:require [cheshire.core :as json]
-            [clj-kafka.new.producer :as kp]
-            [wonko-client.validation :as v])
-  (:import [org.apache.kafka.common.serialization Serializer]
-           [org.apache.kafka.clients.producer Producer]
-           [com.fasterxml.jackson.core JsonGenerationException]))
+            [clj-kafka.new.producer :as kp])
+  (:import com.fasterxml.jackson.core.JsonGenerationException
+           org.apache.kafka.common.serialization.Serializer))
 
 (defonce producer
   (atom nil))
@@ -35,7 +33,6 @@
 
 (defn send [message topic]
   (try
-    (v/validate! message)
     (let [record (kp/record topic message)]
       (kp/send @producer record callback)
       true)

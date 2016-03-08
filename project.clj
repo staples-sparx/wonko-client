@@ -6,9 +6,11 @@
                                   :username [:gpg :env/archiva_username]
                                   :passphrase [:gpg :env/archiva_passphrase]}}
   :dependencies [[cheshire "5.5.0"]
+                 [cider/cider-nrepl "0.11.0-SNAPSHOT"]
                  [clj-kafka "0.3.4"]
                  [org.clojure/clojure "1.7.0"]
-                 [org.clojure/java.jmx "0.3.1"]]
+                 [org.clojure/java.jmx "0.3.1"]
+                 [refactor-nrepl "2.2.0-SNAPSHOT"]]
   :plugins [[s3-wagon-private "1.2.0"]]
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

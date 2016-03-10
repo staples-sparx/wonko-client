@@ -13,7 +13,8 @@
   ([]
      (start 5000))
   ([sleep-ms]
-     (reset! daemon (util/start-daemon send-wonko-events sleep-ms))))
+     (reset! daemon (util/start-daemon send-wonko-events sleep-ms))
+     nil))
 
 (defn stop []
   (util/stop-daemon @daemon)

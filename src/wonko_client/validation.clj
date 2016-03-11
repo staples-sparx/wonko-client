@@ -27,9 +27,9 @@
 
 (def MessageSchema
   {:service  (s/constrained s/Str valid-metric-name?)
-   (s/optional-key :metadata) {:host s/Str
-                               :ip-address s/Str
-                               :ts s/Num}
+   :metadata {:host s/Str
+              :ip-address s/Str
+              :ts s/Num}
    :metric-name (s/constrained str-or-kw valid-metric-name?)
    :metric-type (s/enum :counter :stream :gauge)
    :metric-value s/Num

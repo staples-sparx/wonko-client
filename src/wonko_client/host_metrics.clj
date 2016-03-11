@@ -1,7 +1,8 @@
 (ns wonko-client.host-metrics
   (:require [wonko-client.core :as client]
             [wonko-client.host-metrics.collect :as collect]
-            [wonko-client.util :as util]))
+            [wonko-client.util :as util]
+            [clojure.tools.logging :as log]))
 
 (defonce daemon (atom nil))
 
@@ -14,6 +15,7 @@
      (start 5000))
   ([sleep-ms]
      (reset! daemon (util/start-daemon send-wonko-events sleep-ms))
+     (log/info "started collecting host metrics with an interval of" sleep-ms)
      nil))
 
 (defn stop []

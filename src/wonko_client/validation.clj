@@ -1,4 +1,5 @@
-(ns wonko-client.validation)
+(ns wonko-client.validation
+  (:require [clojure.tools.logging :as log]))
 
 (defonce metric->label-names (atom {}))
 
@@ -21,4 +22,6 @@
 
 (defn validate! [message]
   (when-not (valid? message)
-    (throw (IllegalArgumentException. "Cannot change the label names for a metric."))))
+    (let [ex (IllegalArgumentException. "Cannot change the label names for a metric.")]
+      (log/error ex "Validation failed.")
+      (throw ex))))

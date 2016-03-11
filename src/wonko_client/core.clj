@@ -1,7 +1,8 @@
 (ns wonko-client.core
   (:require [wonko-client.kafka-producer :as kp]
             [wonko-client.util :as util]
-            [wonko-client.validation :as v]))
+            [wonko-client.validation :as v]
+            [clojure.tools.logging :as log]))
 
 (defonce service
   (atom ""))
@@ -51,4 +52,6 @@
 
 (defn init! [service-name kafka-config & {:as options}]
   (reset! service service-name)
-  (kp/init! kafka-config options))
+  (kp/init! kafka-config options)
+  (log/info "wonko-client initialized for service" @service)
+  nil)

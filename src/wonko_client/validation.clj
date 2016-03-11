@@ -34,8 +34,8 @@
    :metric-name (s/constrained str-or-kw valid-metric-name?)
    :metric-type (s/enum :counter :stream :gauge)
    :metric-value s/Num
-   :properties {str-or-kw (s/cond-pre s/Str s/Keyword s/Num)}
-   (s/optional-key :options) {str-or-kw s/Any}})
+   :properties (s/maybe {str-or-kw (s/cond-pre s/Str s/Keyword s/Num)})
+   (s/optional-key :options) (s/maybe {str-or-kw s/Any})})
 
 (def CounterMessageSchema
   (assoc MessageSchema

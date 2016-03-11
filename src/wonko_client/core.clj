@@ -51,4 +51,5 @@
 
 (defn init! [service-name kafka-config & {:as options}]
   (reset! service service-name)
+  (v/set-validation! (or (:validate? options) false))
   (kp/init! kafka-config options))

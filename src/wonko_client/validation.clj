@@ -1,7 +1,11 @@
 (ns wonko-client.validation
   (:require [schema.core :as s]))
 
-(defonce metric->label-names (atom {}))
+(defonce validate?
+  (atom false))
+
+(defonce metric->label-names
+  (atom {}))
 
 (defn- metric-key
   "A unique representation of a given metric, used as a key
@@ -48,11 +52,15 @@
    :stream  (s/validator MessageSchema)})
 
 (defn validate! [{:keys [service metric-name properties metric-type metric-value] :as message}]
-  (let [validator (get validators metric-type)
-        label-names (set (keys properties))
-        existing-label-names (@metric->label-names (metric-key message))]
-    (validator message)
-    (when (and existing-label-names (not= existing-label-names label-names))
-      (throw (IllegalArgumentException. "Cannot change the label names for a metric.")))
-    (swap! metric->label-names maybe-set-label-names-for-metric message label-names)
-    nil))
+  (when @validate?
+    (let [validator (get validators metric-type)
+          label-names (set (keys properties))
+          existing-label-names (@metric->label-names (metric-key message))]
+      (validator message)
+      (when (and existing-label-names (not= existing-label-names label-names))
+        (throw (IllegalArgumentException. "Cannot change the label names for a metric.")))
+      (swap! metric->label-names maybe-set-label-names-for-metric message label-names)
+      nil)))
+
+(defn set-validation! [value]
+  (reset! validate? value))

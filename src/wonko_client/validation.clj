@@ -1,4 +1,5 @@
-(ns wonko-client.validation)
+(ns wonko-client.validation
+  (:require [schema.core :as s]))
 
 (defonce metric->label-names (atom {}))
 
@@ -14,32 +15,44 @@
     metric->label-names
     (assoc metric->label-names (metric-key message) label-names)))
 
-(defn validate* [{:keys [service metric-name properties metric-type metric-value] :as message}]
-  (let [label-names (@metric->label-names (metric-key message))]
-    (cond (and label-names (not= label-names (set (keys properties))))
-          "Cannot change the label names for a metric."
+(defn valid-metric-name? [metric-name]
+  (not (boolean (re-find #"[^A-z0-9\-_ ]" (name metric-name)))))
 
-          (and (#{:gauge :stream} metric-type) (nil? metric-value))
-          (format "Metric value for %s can not be nil." (name metric-type))
+(def str-or-kw
+  (s/cond-pre s/Str s/Keyword))
 
-          (and metric-value (not (number? metric-value)))
-          "Metric value should be a number."
+(def MessageSchema
+  {:service  (s/constrained s/Str valid-metric-name?)
+   (s/optional-key :metadata) {:host s/Str
+                               :ip-address s/Str
+                               :ts s/Num}
+   :metric-name (s/constrained str-or-kw valid-metric-name?)
+   :metric-type (s/enum :counter :stream :gauge)
+   :metric-value s/Num
+   :properties {str-or-kw (s/cond-pre s/Str s/Keyword s/Num)}
+   (s/optional-key :options) {str-or-kw s/Any}})
 
-          (some coll? (vals properties))
-          "Property value should be a scalar, not a collection."
+(def CounterMessageSchema
+  (assoc MessageSchema
+    :metric-value (s/eq nil)))
 
-          (some #(not (or (string? %) (keyword? %))) (keys properties))
-          "Property names have to be strings or keywords."
+(def AlertMessageSchema
+  (assoc CounterMessageSchema
+    :alert-name (s/constrained str-or-kw valid-metric-name?)
+    :alert-info {s/Any s/Any}))
 
-          (not (or (string? metric-name) (keyword? metric-name)))
-          "Metric name should be a string or keyword."
+(def validators
+  {:counter (s/validator CounterMessageSchema)
+   :alert   (s/validator AlertMessageSchema)
+   :gauge   (s/validator MessageSchema)
+   :stream  (s/validator MessageSchema)})
 
-          (re-find #"[^A-z0-9\-_ ]" (name metric-name))
-          "Metric name can have alphanumeric, '-' and '_' characters only.")))
-
-(defn validate! [message]
-  (if-let [error-message (validate* message)]
-    (throw (IllegalArgumentException. error-message))
-    (let [label-names (-> message :properties keys set)]
-      (swap! metric->label-names maybe-set-label-names-for-metric message label-names)
-      nil)))
+(defn validate! [{:keys [service metric-name properties metric-type metric-value] :as message}]
+  (let [validator (get validators metric-type)
+        label-names (set (keys properties))
+        existing-label-names (@metric->label-names (metric-key message))]
+    (validator message)
+    (when (and existing-label-names (not= existing-label-names label-names))
+      (throw (IllegalArgumentException. "Cannot change the label names for a metric.")))
+    (swap! metric->label-names maybe-set-label-names-for-metric message label-names)
+    nil))

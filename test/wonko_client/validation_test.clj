@@ -79,4 +79,15 @@
                        :metric-type :gauge :properties {"first" 3 "second" 4}})))
 
     (is (nil? (v/validate! {:service "test-service" :metric-name "fail-metric" :metric-value 3
-                            :metric-type :gauge :properties {"third" 3 "second" 4}})))))
+                            :metric-type :gauge :properties {"third" 3 "second" 4}}))))
+
+  (testing "metric-name should be valid"
+    (is (thrown-with-msg?
+         IllegalArgumentException #"Metric name should be a string or keyword."
+         (v/validate! {:service "test-service" :metric-name 6 :metric-value 3
+                       :metric-type :gauge :properties {"first" 3 "second" 4}})))
+
+    (is (thrown-with-msg?
+         IllegalArgumentException #"Metric name can have alphanumeric, '-' and '_' characters only."
+         (v/validate! {:service "test-service" :metric-name :invalid-name? :metric-value 3
+                       :metric-type :gauge :properties {"first" 3 "second" 4}})))))

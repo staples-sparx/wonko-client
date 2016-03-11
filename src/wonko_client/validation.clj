@@ -29,7 +29,13 @@
           "Property value should be a scalar, not a collection."
 
           (some #(not (or (string? %) (keyword? %))) (keys properties))
-          "Property names have to be strings or keywords.")))
+          "Property names have to be strings or keywords."
+
+          (not (or (string? metric-name) (keyword? metric-name)))
+          "Metric name should be a string or keyword."
+
+          (re-find #"[^A-z0-9\-_ ]" (name metric-name))
+          "Metric name can have alphanumeric, '-' and '_' characters only.")))
 
 (defn validate! [message]
   (if-let [error-message (validate* message)]

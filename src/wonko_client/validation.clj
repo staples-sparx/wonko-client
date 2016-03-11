@@ -1,5 +1,6 @@
 (ns wonko-client.validation
-  (:require [schema.core :as s]))
+  (:require [schema.core :as s]
+            [clojure.tools.logging :as log]))
 
 (defonce validate?
   (atom false))

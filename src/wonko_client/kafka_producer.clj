@@ -1,6 +1,7 @@
 (ns wonko-client.kafka-producer
   (:require [cheshire.core :as json]
-            [clj-kafka.new.producer :as kp])
+            [clj-kafka.new.producer :as kp]
+            [clojure.tools.logging :as log])
   (:import com.fasterxml.jackson.core.JsonGenerationException
            org.apache.kafka.common.serialization.Serializer))
 
@@ -23,9 +24,9 @@
                (Jsonizer.)))
 
 (defn default-exception-handler [response ex]
-  (prn {:msg "Unable to send message to kafka."
-        :response response
-        :ex (bean ex)}))
+  (log/error ex {:msg "Unable to send message to kafka."
+                 :response response
+                 :ex (bean ex)}))
 
 (defn callback  [response exception]
   (when exception

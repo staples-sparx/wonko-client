@@ -14,11 +14,26 @@
     metric->label-names
     (assoc metric->label-names (metric-key message) label-names)))
 
-(defn valid? [{:keys [service metric-name properties metric-type] :as message}]
-  (let [label-names (set (keys properties))]
-    (swap! metric->label-names maybe-set-label-names-for-metric message label-names)
-    (= label-names (@metric->label-names (metric-key message)))))
+(defn validate* [{:keys [service metric-name properties metric-type metric-value] :as message}]
+  (let [label-names (@metric->label-names (metric-key message))]
+    (cond (and label-names (not= label-names (set (keys properties))))
+          "Cannot change the label names for a metric."
+
+          (and (#{:gauge :stream} metric-type) (nil? metric-value))
+          (format "Metric value for %s can not be nil." (name metric-type))
+
+          (and metric-value (not (number? metric-value)))
+          "Metric value should be a number."
+
+          (some coll? (vals properties))
+          "Property value should be a scalar, not a collection."
+
+          (some #(not (or (string? %) (keyword? %))) (keys properties))
+          "Property names have to be strings or keywords.")))
 
 (defn validate! [message]
-  (when-not (valid? message)
-    (throw (IllegalArgumentException. "Cannot change the label names for a metric."))))
+  (if-let [error-message (validate* message)]
+    (throw (IllegalArgumentException. error-message))
+    (let [label-names (-> message :properties keys set)]
+      (swap! metric->label-names maybe-set-label-names-for-metric message label-names)
+      nil)))

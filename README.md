@@ -17,7 +17,7 @@ It is hosted in SparX s3 maven, so you'll have to add this to `project.clj`:
 ```
 ## Usage
 
-Initialize the client with the service's name, kafka producer configuration and optionally an exception handler.
+Initialize the client with the service's name, kafka producer configuration and optionally an exception handler. Validation is turned off by default (for performance reasons), but you can enable validation in dev and test environments to ensure inputs are correct.
 
 ```clojure
 (require '[wonko-client.core :as wonko])
@@ -28,6 +28,7 @@ Initialize the client with the service's name, kafka producer configuration and 
               "linger.ms" 5}
              :exception-handler (fn [response exception]
                                   (prn response exception))
+             :validate? true)
 ```
 
 Send monitoring events using `counter`s, `gauge`s, and `stream`s.

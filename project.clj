@@ -9,6 +9,8 @@
                  [clj-kafka "0.3.4"]
                  [org.clojure/clojure "1.7.0"]
                  [org.clojure/java.jmx "0.3.1"]
+                 [prismatic/schema "1.0.5"]
+                 [org.clojure/java.jmx "0.3.1"]
                  [org.clojure/tools.logging "0.3.1"]]
   :plugins [[s3-wagon-private "1.2.0"]
             [cider/cider-nrepl "0.11.0"]

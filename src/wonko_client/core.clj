@@ -14,10 +14,13 @@
 (defonce thread-pool
   (atom nil))
 
-(defn metadata []
+(def default-metadata
   {:host (util/hostname)
-   :ip-address (util/ip-address)
-   :ts (util/current-timestamp)})
+   :ip-address (util/ip-address)})
+
+(defn metadata []
+  (assoc default-metadata
+    :ts (util/current-timestamp)))
 
 (defn message [metric-name properties metric-value options metric-type]
   {:service      @service

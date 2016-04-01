@@ -58,9 +58,9 @@
                   :alerts alerts-topic}))
 
 (defn init! [service-name kafka-config & {:as options}]
-  (let [validate? (or (:validate? options) false)
-        thread-pool-size (or (:thread-pool-size options) 30)
-        queue-size (or (:queue-size options) 30)]
+  (let [validate?        (or (:validate? options) false)
+        thread-pool-size (or (:thread-pool-size options) 10)
+        queue-size       (or (:queue-size options) 10)]
     (reset! service service-name)
     (reset! thread-pool (util/create-fixed-threadpool thread-pool-size queue-size))
     (v/set-validation! validate?)

@@ -6,7 +6,7 @@ Use this to publish monitoring events to Wonko from your project.
 
 Add leiningen dependency:
 ```clojure
-[staples-sparx/wonko-client "0.1.3"]
+[staples-sparx/wonko-client "0.1.4"]
 ```
 
 It is hosted in SparX s3 maven, so you'll have to add this to `project.clj`:
@@ -25,7 +25,9 @@ Initialize the client with the service's name, kafka producer configuration and 
 (wonko/init! "service-name"
              {"bootstrap.servers" "127.0.0.1:9092"
               "compression.type" "gzip"
-              "linger.ms" 5}
+              "linger.ms" 5
+              "block.on.buffer.full" "false"
+              "total.memory.bytes" (* 1024 1024 120)}
              :exception-handler (fn [response exception]
                                   (prn response exception))
              :validate? true)
@@ -53,6 +55,10 @@ Host metrics monitoring is built in, you just have to start it.
 (require '[wonko-client.host-metrics :as w-host-metrics])
 (w-host-metrics/start)
 ```
+## Options
+
+- `validate?`: Set this to true in dev environments to synchronously validate schemas of arguments to wonko metrics. Wonko-client will throw schema exception IllegalArgumentException with a description of the errors. Default value is `false`.
+- `thread-pool-size` and `queue-size`: These are the configs for a fixed threadpool within wonko that makes a few things asynchronous. Typically, you wouldn't need to tune these. Default values are `10` and `10` respectively.
 
 ## Metric types
 ### Counter

@@ -98,4 +98,13 @@
          (v/validate! (make-message {:metric-name 6}))))
     (is (thrown?
          ExceptionInfo
-         (v/validate! (make-message { :metric-name :invalid-name?}))))))
+         (v/validate! (make-message { :metric-name :invalid-name?})))))
+
+  (testing "alert messages should have :alert-name and :alert-info"
+    (is (thrown?
+         ExceptionInfo
+         (v/validate! (make-message {:metric-name :something-alert :metric-type :counter
+                                     :alert-name "asdf"}))))
+    (is (nil?
+         (v/validate! (make-message {:metric-name :something-alert :metric-type :counter
+                                     :alert-info {} :alert-name "asdf"}))))))

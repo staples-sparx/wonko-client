@@ -54,7 +54,8 @@
 
 (defn validate! [{:keys [service metric-name properties metric-type metric-value] :as message}]
   (when @validate?
-    (let [validator (get validators metric-type)
+    (let [effective-metric-type (if (:alert-name message) :alert metric-type)
+          validator (get validators effective-metric-type)
           label-names (set (keys properties))
           existing-label-names (@metric->label-names (metric-key message))]
       (validator message)

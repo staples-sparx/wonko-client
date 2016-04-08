@@ -4,26 +4,23 @@
             [wonko-client.validation :as v]
             [clojure.tools.logging :as log]))
 
-(defonce service
-  (atom ""))
+(def ^:private default-topics
+  {:events "wonko-events"
+   :alerts "wonko-alerts"})
 
-(defonce topics
-  (atom {:events "wonko-events"
-         :alerts "wonko-alerts"}))
-
-(defonce thread-pool
+(defonce ^:private instance
   (atom nil))
 
-(def default-metadata
+(def ^:private default-metadata
   {:host (util/hostname)
    :ip-address (util/ip-address)})
 
-(defn metadata []
+(defn- metadata []
   (assoc default-metadata
     :ts (util/current-timestamp)))
 
-(defn message [metric-name properties metric-value options metric-type]
-  {:service      @service
+(defn- message [{:keys [service]} metric-name properties metric-value options metric-type]
+  {:service      service
    :metadata     (metadata)
    :metric-name  metric-name
    :metric-type  metric-type
@@ -31,39 +28,45 @@
    :properties   properties
    :options      options})
 
-(defn validate-and-send [message topic]
+(defn- validate-and-send [{:keys [thread-pool topics]} message topic]
   (v/validate! message)
-  (.submit @thread-pool #(kp/send message (get @topics topic))))
+  (.submit thread-pool #(kp/send message (get topics topic))))
 
 (defn counter [metric-name properties & {:as options}]
-  (let [message (message metric-name properties nil options :counter)]
-    (validate-and-send message :events)))
+  (let [this @instance
+        message (message this metric-name properties nil options :counter)]
+    (validate-and-send this message :events)))
 
 (defn gauge [metric-name properties metric-value & {:as options}]
-  (let [message (message metric-name properties metric-value options :gauge)]
-    (validate-and-send message :events)))
+  (let [this @instance
+        message (message this metric-name properties metric-value options :gauge)]
+    (validate-and-send this message :events)))
 
 (defn stream [metric-name properties metric-value & {:as options}]
-  (let [message (message metric-name properties metric-value options :stream)]
-    (validate-and-send message :events)))
+  (let [this @instance
+        message (message this metric-name properties metric-value options :stream)]
+    (validate-and-send this message :events)))
 
 (defn alert [alert-name alert-info]
-  (let [message (merge (message alert-name {} nil nil :counter)
+  (let [this @instance
+        message (merge (message this alert-name {} nil nil :counter)
                        {:alert-name alert-name
                         :alert-info alert-info})]
-    (validate-and-send message :alerts)))
+    (validate-and-send this message :alerts)))
 
 (defn set-topics! [events-topic alerts-topic]
-  (reset! topics {:events events-topic
-                  :alerts alerts-topic}))
+  (swap! instance assoc :topics {:events events-topic
+                                 :alerts alerts-topic}))
 
 (defn init! [service-name kafka-config & {:as options}]
   (let [validate?        (or (:validate? options) false)
         thread-pool-size (or (:thread-pool-size options) 10)
         queue-size       (or (:queue-size options) 10)]
-    (reset! service service-name)
-    (reset! thread-pool (util/create-fixed-threadpool thread-pool-size queue-size))
+    (reset! instance
+            {:service service-name
+             :topics default-topics
+             :thread-pool (util/create-fixed-threadpool thread-pool-size queue-size)})
     (v/set-validation! validate?)
     (kp/init! kafka-config options)
-    (log/info "wonko-client initialized for service" @service)
+    (log/info "wonko-client initialized for service" service-name)
     nil))

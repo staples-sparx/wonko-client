@@ -20,12 +20,10 @@
           exception-handler (fn [response exception]
                               (swap! exceptions conj exception))]
       (kafka/create-topic topic-name zookeeper)
-
-      (sut/init! kafka-config {:exception-handler exception-handler})
-      (is (sut/send "message" topic-name))
-      (is (empty? @exceptions))
-
-      (kafka/delete-topic topic-name zookeeper)))
+      (let [producer (sut/create kafka-config {:exception-handler exception-handler})]
+        (is (sut/send producer "message" topic-name))
+        (is (empty? @exceptions))
+        (kafka/delete-topic topic-name zookeeper))))
 
   (testing "the exception handler is called when there are exceptions"
     (let [topic-name        (util/rand-str "test-topic")
@@ -34,11 +32,11 @@
                               (swap! exceptions conj exception))]
       (kafka/create-topic topic-name zookeeper)
 
-      (sut/init! kafka-config {:exception-handler exception-handler})
-      (.close @sut/producer)
-      (is (sut/send "message" topic-name))
-      (is (not (empty? @exceptions)))
-      (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions))))
+      (let [producer (sut/create kafka-config {:exception-handler exception-handler})]
+        (sut/close producer)
+        (is (sut/send producer "message" topic-name))
+        (is (not (empty? @exceptions)))
+        (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions)))))
 
       (kafka/delete-topic topic-name zookeeper)))
 
@@ -49,10 +47,10 @@
                               (swap! exceptions conj exception))]
       (kafka/create-topic topic-name zookeeper)
 
-      (sut/init! kafka-config {:exception-handler exception-handler})
-      (is (not (sut/send java.lang.String topic-name)))
-      (is (not (empty? @exceptions)))
-      (is (re-find #"Cannot JSON encode" (.getMessage (first @exceptions))))
+      (let [producer (sut/create kafka-config {:exception-handler exception-handler})]
+        (is (not (sut/send producer java.lang.String topic-name)))
+        (is (not (empty? @exceptions)))
+        (is (re-find #"Cannot JSON encode" (.getMessage (first @exceptions)))))
 
       (kafka/delete-topic topic-name zookeeper)))
 
@@ -66,10 +64,10 @@
       ;; This seems better than checking if the actual default handler
       ;; has printed to STDOUT, but suggestions welcome to remove this.
       (with-redefs [sut/default-exception-handler exception-handler]
-        (sut/init! kafka-config {:exception-handler nil})
-        (.close @sut/producer)
-        (is (sut/send "message" topic-name))
-        (is (not (empty? @exceptions)))
-        (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions)))))
+        (let [producer (sut/create kafka-config {:exception-handler nil})]
+          (sut/close producer)
+          (is (sut/send producer "message" topic-name))
+          (is (not (empty? @exceptions)))
+          (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions))))))
 
       (kafka/delete-topic topic-name zookeeper))))

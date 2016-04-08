@@ -28,9 +28,9 @@
    :properties   properties
    :options      options})
 
-(defn- validate-and-send [{:keys [thread-pool topics]} message topic]
+(defn- validate-and-send [{:keys [thread-pool topics producer]} message topic]
   (v/validate! message)
-  (.submit thread-pool #(kp/send message (get topics topic))))
+  (.submit thread-pool #(kp/send producer message (get topics topic))))
 
 (defn counter [metric-name properties & {:as options}]
   (let [this @instance
@@ -65,8 +65,8 @@
     (reset! instance
             {:service service-name
              :topics default-topics
-             :thread-pool (util/create-fixed-threadpool thread-pool-size queue-size)})
+             :thread-pool (util/create-fixed-threadpool thread-pool-size queue-size)
+             :producer (kp/create kafka-config options)})
     (v/set-validation! validate?)
-    (kp/init! kafka-config options)
     (log/info "wonko-client initialized for service" service-name)
     nil))

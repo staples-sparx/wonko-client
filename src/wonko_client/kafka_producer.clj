@@ -5,12 +5,6 @@
   (:import com.fasterxml.jackson.core.JsonGenerationException
            org.apache.kafka.common.serialization.Serializer))
 
-(defonce producer
-  (atom nil))
-
-(defonce exception-handler
-  (atom (constantly nil)))
-
 (deftype Jsonizer []
   Serializer
   (configure [_ _ _ ])
@@ -28,21 +22,23 @@
                  :response response
                  :ex (bean ex)}))
 
-(defn callback  [response exception]
+(defn callback  [exception-handler response exception]
   (when exception
-    (@exception-handler response exception)))
+    (exception-handler response exception)))
 
-(defn send [message topic]
+(defn send [{:keys [producer exception-handler]} message topic]
   (try
     (let [record (kp/record topic message)]
-      (kp/send @producer record callback)
+      (kp/send producer record (partial callback exception-handler))
       true)
     (catch JsonGenerationException exception
-      (@exception-handler nil exception)
+      (exception-handler nil exception)
       false)))
 
-(defn init! [config options]
-  (reset! producer (create-producer config))
-  (reset! exception-handler (or (:exception-handler options)
-                                default-exception-handler))
-  nil)
+(defn close [{:keys [producer]}]
+  (.close producer))
+
+(defn create [config options]
+  {:producer (create-producer config)
+   :exception-handler (or (:exception-handler options)
+                          default-exception-handler)})

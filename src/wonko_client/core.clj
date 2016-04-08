@@ -33,26 +33,26 @@
   (.submit thread-pool #(kp/send producer message (get topics topic))))
 
 (defn counter [metric-name properties & {:as options}]
-  (let [this @instance
-        message (message this metric-name properties nil options :counter)]
-    (validate-and-send this message :events)))
+  (when-let [this @instance]
+    (let [message (message this metric-name properties nil options :counter)]
+    (validate-and-send this message :events))))
 
 (defn gauge [metric-name properties metric-value & {:as options}]
-  (let [this @instance
-        message (message this metric-name properties metric-value options :gauge)]
-    (validate-and-send this message :events)))
+  (when-let [this @instance]
+    (let [message (message this metric-name properties metric-value options :gauge)]
+      (validate-and-send this message :events))))
 
 (defn stream [metric-name properties metric-value & {:as options}]
-  (let [this @instance
-        message (message this metric-name properties metric-value options :stream)]
-    (validate-and-send this message :events)))
+  (when-let [this @instance]
+    (let [message (message this metric-name properties metric-value options :stream)]
+      (validate-and-send this message :events))))
 
 (defn alert [alert-name alert-info]
-  (let [this @instance
-        message (merge (message this alert-name {} nil nil :counter)
-                       {:alert-name alert-name
-                        :alert-info alert-info})]
-    (validate-and-send this message :alerts)))
+  (when-let [this @instance]
+    (let [message (merge (message this alert-name {} nil nil :counter)
+                         {:alert-name alert-name
+                          :alert-info alert-info})]
+      (validate-and-send this message :alerts))))
 
 (defn set-topics! [events-topic alerts-topic]
   (swap! instance assoc :topics {:events events-topic

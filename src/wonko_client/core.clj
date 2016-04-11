@@ -7,7 +7,7 @@
 
 (def ^:private default-options
   {:validate?        false
-   :drop-on-reject?  true
+   :drop-on-reject?  false
    :thread-pool-size 10
    :queue-size       10
    :topics           {:events "wonko-events"
@@ -22,7 +22,7 @@
 (defn- send-sync [{:keys [thread-pool topics producer] :as instance} topic message]
   (kp/send producer message (get topics topic)))
 
-(defn- send-async [instance topic message]
+(defn- send-async [{:keys [thread-pool] :as instance} topic message]
   (.submit thread-pool #(send-sync instance topic message)))
 
 (defn counter [metric-name properties & {:as options}]

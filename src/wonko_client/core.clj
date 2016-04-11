@@ -12,7 +12,7 @@
    :topics           {:events "wonko-events"
                       :alerts "wonko-alerts"}})
 
-(defonce ^:private instance
+(defonce instance
   (atom {:service nil
          :topics nil
          :thread-pool nil

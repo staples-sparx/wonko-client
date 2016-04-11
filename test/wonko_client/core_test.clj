@@ -19,7 +19,7 @@
   (testing "counters, gauges, streams and alerts work correctly"
     (let [topics (util/create-test-topics)]
       (core/init! "test-service"
-                  {"bootstrap.servers" "localhost:9092"}
+                  util/kafka-config
                   :validate? true
                   :topics topics)
 
@@ -67,3 +67,19 @@
                              :alert-name :alert-info]))))
 
       (util/delete-topics (:events topics) (:alerts topics)))))
+
+(deftest test-options
+  (testing "`validate? true` turns on validation"
+    (core/init! "test-service" util/kafka-config :validate? true)
+    (is (thrown?
+         clojure.lang.ExceptionInfo
+         (core/counter 123 {:some :prop})))
+
+    (core/init! "test-service" util/kafka-config :validate? false)
+    (is (core/counter 123 {:some :prop})))
+
+  (testing "thread pool configs"
+    (core/init! "test-service" util/kafka-config :thread-pool-size 6 :queue-size 6)
+    (is (= 6 (.getCorePoolSize (:thread-pool @core/instance))))
+    (is (= 6 (.getMaximumPoolSize (:thread-pool @core/instance))))
+    (is (= 6 (.remainingCapacity (.getQueue (:thread-pool @core/instance)))))))

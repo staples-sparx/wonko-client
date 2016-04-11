@@ -3,7 +3,8 @@
             ThreadPoolExecutor
             TimeUnit
             ArrayBlockingQueue
-            ThreadPoolExecutor$CallerRunsPolicy]))
+            ThreadPoolExecutor$CallerRunsPolicy
+            ThreadPoolExecutor$DiscardPolicy]))
 
 (defn start-daemon [f sleep-ms]
   (doto (Thread. (fn []
@@ -16,10 +17,12 @@
 (defn stop-daemon [daemon]
   (.interrupt ^Thread daemon))
 
-(defn create-fixed-threadpool [pool-size queue-size]
-  (ThreadPoolExecutor. pool-size  ;corePoolSize
-                       pool-size  ;maximumPoolSize
+(defn create-fixed-threadpool [{:keys [thread-pool-size queue-size drop-on-reject?]}]
+  (ThreadPoolExecutor. thread-pool-size
+                       thread-pool-size
                        60
                        TimeUnit/SECONDS
                        (ArrayBlockingQueue. queue-size true)
-                       (ThreadPoolExecutor$CallerRunsPolicy.)))
+                       (if drop-on-reject?
+                         (ThreadPoolExecutor$DiscardPolicy.)
+                         (ThreadPoolExecutor$CallerRunsPolicy.))))

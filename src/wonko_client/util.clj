@@ -4,7 +4,20 @@
             TimeUnit
             ArrayBlockingQueue
             ThreadPoolExecutor$CallerRunsPolicy
-            ThreadPoolExecutor$DiscardPolicy]))
+            ThreadPoolExecutor$DiscardPolicy])
+  (:require [clojure.tools.logging :as log]))
+
+(def discard-and-log-policy
+  (proxy [ThreadPoolExecutor$DiscardPolicy] []
+    (rejectedExecution [^Runnable runnable ^ThreadPoolExecutor executor]
+      (log/info "rejected task. discarding runnable.")
+      (proxy-super rejectedExecution runnable executor))))
+
+(def caller-runs-and-logs-policy
+  (proxy [ThreadPoolExecutor$CallerRunsPolicy] []
+    (rejectedExecution [^Runnable runnable ^ThreadPoolExecutor executor]
+      (log/info "rejected task. caller is now executing runnable.")
+      (proxy-super rejectedExecution runnable executor))))
 
 (defn start-daemon [f sleep-ms]
   (doto (Thread. (fn []
@@ -24,5 +37,5 @@
                        TimeUnit/SECONDS
                        (ArrayBlockingQueue. queue-size true)
                        (if drop-on-reject?
-                         (ThreadPoolExecutor$DiscardPolicy.)
-                         (ThreadPoolExecutor$CallerRunsPolicy.))))
+                         discard-and-log-policy
+                         caller-runs-and-logs-policy)))

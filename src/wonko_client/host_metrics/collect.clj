@@ -83,7 +83,8 @@
         :let [metric-value (get-in metrics path)
               metric-name (s/join "-" ["jvm" prefix (name (last path))])
               property-values (map name (drop-last path))
-              properties (zipmap property-names property-values)]]
+              properties (zipmap property-names property-values)]
+        :when (some? metric-value)]
     [metric-name properties metric-value]))
 
 (defn events []

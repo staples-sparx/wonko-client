@@ -7,15 +7,18 @@
 (defonce daemon (atom nil))
 
 (defn send-wonko-events []
-  (doseq [event (collect/events)]
-    (apply client/gauge event)))
+  (try
+    (doseq [{:keys [metric-name properties metric-value] :as event} (collect/events)]
+      (client/gauge metric-name properties metric-value))
+    (catch Exception e
+      (log/error e "Unable to send host metrics."))))
 
 (defn start
   ([]
      (start 5000))
   ([sleep-ms]
      (reset! daemon (util/start-daemon send-wonko-events sleep-ms))
-     (log/info "started collecting host metrics with an interval of" sleep-ms)
+     (log/info "Started collecting host metrics with an interval of" sleep-ms)
      nil))
 
 (defn stop []

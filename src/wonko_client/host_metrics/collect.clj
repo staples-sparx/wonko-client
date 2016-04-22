@@ -85,7 +85,9 @@
               property-values (map name (drop-last path))
               properties (zipmap property-names property-values)]
         :when (some? metric-value)]
-    [metric-name properties metric-value]))
+    {:metric-name metric-name
+     :properties properties
+     :metric-value metric-value}))
 
 (defn events []
   (->> [(threading) (cpu) (memory) (memory-pools) (garbage-collection)]

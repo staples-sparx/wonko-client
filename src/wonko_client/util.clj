@@ -5,11 +5,8 @@
             ArrayBlockingQueue
             ThreadPoolExecutor$CallerRunsPolicy]))
 
-(defn start-daemon [f sleep-ms]
-  (doto (Thread. (fn []
-                   (f)
-                   (Thread/sleep sleep-ms)
-                   (recur)))
+(defn start-daemon [f]
+  (doto (Thread. f)
     (.setDaemon true)
     (.start)))
 

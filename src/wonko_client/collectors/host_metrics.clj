@@ -1,6 +1,8 @@
-(ns wonko-client.host-metrics.collect
+(ns wonko-client.collectors.host-metrics
   (:require [clojure.java.jmx :as jmx]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [wonko-client.core :as client]
+            [clojure.tools.logging :as log]))
 
 (defn mbean-names []
   (map #(str %) (jmx/mbean-names "*:*")))
@@ -89,7 +91,11 @@
      :properties properties
      :metric-value metric-value}))
 
-(defn events []
+(defn metrics []
   (->> [(threading) (cpu) (memory) (memory-pools) (garbage-collection)]
        (map ->wonko)
        (apply concat)))
+
+(defn send-metrics []
+  (doseq [{:keys [metric-name properties metric-value] :as metric} (metrics)]
+    (client/gauge metric-name properties metric-value)))

@@ -50,11 +50,16 @@ Send alerts to pager-duty, email or slack using `alert`s.
 (wonko/alert :some-alert-name {:alert :info})
 ```
 
-Host metrics monitoring is built in, you just have to start it.
+### Collectors
+
+A few collectors are built in. For example, to start collecting and sending host-metrics and ping, use:
 ```clojure
-(require '[wonko-client.host-metrics :as w-host-metrics])
-(w-host-metrics/start)
+(require '[wonko-client.collectors :as wc])
+(wc/start :host-metrics :ping)
 ```
+
+Currently, there are only two kinds of collectors: `:host-metrics` and `:ping`. `:ping` is used as a heartbeat counter to monitor service uptime.
+
 ## Options
 
 - `validate?`: Set this to true in dev environments to synchronously validate schemas of arguments to wonko metrics. Wonko-client will throw schema exception IllegalArgumentException with a description of the errors. Default value is `false`.

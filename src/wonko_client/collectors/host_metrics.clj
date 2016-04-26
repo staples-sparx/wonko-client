@@ -38,6 +38,12 @@
            [:TotalSwapSpaceSize]]
    :property-names []})
 
+(defn runtime []
+  {:prefix "runtime"
+   :metrics (jmx/mbean "java.lang:type=Runtime")
+   :paths [[:Uptime]]
+   :property-names []})
+
 (defn memory []
   {:prefix "memory"
    :metrics (jmx/mbean "java.lang:type=Memory")
@@ -92,7 +98,7 @@
      :metric-value metric-value}))
 
 (defn metrics []
-  (->> [(threading) (cpu) (memory) (memory-pools) (garbage-collection)]
+  (->> [(threading) (cpu) (runtime) (memory) (memory-pools) (garbage-collection)]
        (map ->wonko)
        (apply concat)))
 

@@ -64,6 +64,7 @@ Currently, there are only two kinds of collectors: `:host-metrics` and `:ping`. 
 
 - `validate?`: Set this to true in dev environments to synchronously validate schemas of arguments to wonko metrics. Wonko-client will throw schema exception IllegalArgumentException with a description of the errors. Default value is `false`.
 - `thread-pool-size` and `queue-size`: These are the configs for a fixed threadpool within wonko that makes a few things asynchronous. Typically, you wouldn't need to tune these. Default values are `10` and `10` respectively.
+- `:drop-on-reject?`: Set this to true if slowing down the service in case of a problem with wonko-client/kafka is unacceptable. This options allows you to choose between dropping metrics and adding back pressure to the application. Alerts are synchronous however, so they will not be dropped. The thread-pool itself can be tuned such that under normal conditions, no metrics will be dropped.
 
 ## Metric types
 ### Counter

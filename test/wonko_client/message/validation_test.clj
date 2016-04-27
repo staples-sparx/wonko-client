@@ -18,33 +18,33 @@
                      :ts 9999999999}}
          message))
 
-(deftest validate-label-names-test
-  (testing "valid when label names have not changed"
-    (is (nil? (v/validate! (make-message {:service "label-names" :metric-name "not-changed"
+(deftest validate-property-names-test
+  (testing "valid when property names have not changed"
+    (is (nil? (v/validate! (make-message {:service "property-names" :metric-name "not-changed"
                                           :properties {"first" 1}}))))
-    (is (nil? (v/validate! (make-message {:service "label-names" :metric-name "not-changed"
+    (is (nil? (v/validate! (make-message {:service "property-names" :metric-name "not-changed"
                                           :properties {"first" 1}})))))
 
-  (testing "not valid when label names have been added"
-    (is (nil? (v/validate! (make-message {:service "label-names" :metric-name "added"
+  (testing "not valid when property names have been added"
+    (is (nil? (v/validate! (make-message {:service "property-names" :metric-name "added"
                                           :properties {"first" 1}}))))
     (is (thrown-with-msg?
-         IllegalArgumentException #"Cannot change the label names for a metric."
-         (v/validate! (make-message {:service "label-names" :metric-name "added"
+         IllegalArgumentException #"Cannot change the property names for a metric."
+         (v/validate! (make-message {:service "property-names" :metric-name "added"
                                      :properties {"first" 3 "second" 4}})))))
 
-  (testing "not valid when label names have been removed"
-    (is (nil? (v/validate! (make-message {:service "label-names" :metric-name "removed"
+  (testing "not valid when property names have been removed"
+    (is (nil? (v/validate! (make-message {:service "property-names" :metric-name "removed"
                                           :properties {"first" 3 "second" 4}}))))
     (is (thrown-with-msg?
-         IllegalArgumentException #"Cannot change the label names for a metric."
-         (v/validate! (make-message {:service "label-names" :metric-name "removed"
+         IllegalArgumentException #"Cannot change the property names for a metric."
+         (v/validate! (make-message {:service "property-names" :metric-name "removed"
                                      :properties {"first" 3}})))))
 
   (testing "metrics with the same name but different type are considered different metrics"
-    (is (nil? (v/validate! (make-message {:service "label-names" :metric-name "removed"
+    (is (nil? (v/validate! (make-message {:service "property-names" :metric-name "removed"
                                           :metric-type :counter :properties {"first" 3 "second" 4}}))))
-    (is (nil? (v/validate! (make-message {:service "label-names" :metric-name "removed"
+    (is (nil? (v/validate! (make-message {:service "property-names" :metric-name "removed"
                                           :metric-value 3
                                           :metric-type :gauge :properties {"first" 1}}))))))
 
@@ -84,7 +84,7 @@
     (is (nil?
          (v/validate! (make-message {:properties {"first" 3 :second 4 "third" 5}})))))
 
-  (testing "label values are not set when validation fails"
+  (testing "property values are not set when validation fails"
     (is (thrown?
          ExceptionInfo
          (v/validate! (make-message {:service "test-service" :metric-name "fail-metric"

@@ -2,8 +2,8 @@
   (:require [wonko-client.message.validation :as v]))
 
 (defn with-cleared-validation-state [test-fn]
-  (reset! v/metric->label-names {})
+  (reset! v/metric->property-names {})
   (v/set-validation! true)
   (test-fn)
-  (reset! v/metric->label-names {})
+  (reset! v/metric->property-names {})
   (v/set-validation! false))

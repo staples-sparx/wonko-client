@@ -2,7 +2,7 @@
   (:require [wonko-client.kafka-producer :as kp]
             [wonko-client.util :as util]
             [wonko-client.message :as message]
-            [wonko-client.validation :as v]
+            [wonko-client.message.validation :as v]
             [clojure.tools.logging :as log]))
 
 (def ^:private default-options

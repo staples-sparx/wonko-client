@@ -1,5 +1,5 @@
 (ns wonko-client.message
-  (:require [wonko-client.validation :as v]))
+  (:require [wonko-client.message.validation :as v]))
 
 (def hostname
   (.getHostName (java.net.InetAddress/getLocalHost)))

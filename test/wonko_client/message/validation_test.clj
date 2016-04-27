@@ -1,5 +1,5 @@
-(ns wonko-client.validation-test
-  (:require [wonko-client.validation :as v]
+(ns wonko-client.message.validation-test
+  (:require [wonko-client.message.validation :as v]
             [clojure.test :refer :all]
             [wonko-client.test-fixtures :as tf])
   (:import [clojure.lang ExceptionInfo]))

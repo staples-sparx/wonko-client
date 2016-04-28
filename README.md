@@ -6,7 +6,7 @@ Use this to publish monitoring events to Wonko from your project.
 
 Add leiningen dependency:
 ```clojure
-[staples-sparx/wonko-client "0.1.4"]
+[staples-sparx/wonko-client "0.1.5"]
 ```
 
 It is hosted in SparX s3 maven, so you'll have to add this to `project.clj`:

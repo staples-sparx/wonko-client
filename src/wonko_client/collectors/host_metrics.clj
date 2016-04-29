@@ -2,7 +2,8 @@
   (:require [clojure.java.jmx :as jmx]
             [clojure.string :as s]
             [wonko-client.core :as client]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [clojure.java.shell :as sh]))
 
 (defn mbean-names []
   (map #(str %) (jmx/mbean-names "*:*")))
@@ -86,6 +87,31 @@
                     (keys metrics))
      :property-names ["gc-type" "gc-info"]}))
 
+(defn df []
+  (let [output (sh/sh "df" "--output=target,size,used,avail,pcent")]
+    (when (= 0 (:exit output))
+      (let [parsed-rows (->> (-> output :out (s/split #"\n"))
+                             (map #(s/split % #"[ ]+"))
+                             rest)
+            row->metric (fn [[target size used avail pcent]]
+                          {target {:size (Long/parseLong size)
+                                   :used (Long/parseLong used)
+                                   :avail (Long/parseLong avail)
+                                   :pcent (Long/parseLong (apply str (butlast pcent)))}})]
+        (into {} (map row->metric parsed-rows))))))
+
+(defn disk-usage []
+  (let [metrics (df)]
+    {:prefix "disk-usage"
+     :metrics metrics
+     :paths (mapcat (fn [target]
+                      [[target :size]
+                       [target :used]
+                       [target :avail]
+                       [target :pcent]])
+                    (keys metrics))
+     :property-names ["target"]}))
+
 (defn ->wonko [{:keys [prefix metrics paths property-names]}]
   (for [path paths
         :let [metric-value (get-in metrics path)
@@ -98,7 +124,7 @@
      :metric-value metric-value}))
 
 (defn metrics []
-  (->> [(threading) (cpu) (runtime) (memory) (memory-pools) (garbage-collection)]
+  (->> [(threading) (cpu) (runtime) (memory) (memory-pools) (garbage-collection) (disk-usage)]
        (map ->wonko)
        (apply concat)))
 

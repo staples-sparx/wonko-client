@@ -5,6 +5,7 @@
   :repositories {"runa-maven-s3" {:url "s3p://runa-maven/releases/"
                                   :username [:gpg :env/archiva_username]
                                   :passphrase [:gpg :env/archiva_passphrase]}}
+  :resource-paths ["resources"]
   :dependencies [[cheshire "5.5.0"]
                  [clj-kafka "0.3.4"]
                  [org.clojure/clojure "1.7.0"]

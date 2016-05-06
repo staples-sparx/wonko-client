@@ -7,7 +7,8 @@
 (defonce collectors
   (atom
    {:host-metrics {:f hm/send-metrics :sleep-ms 5000 :log-msg "Sending host metrics." :daemon nil}
-    :ping         {:f ping/send-ping :sleep-ms 5000 :log-msg "Sending ping." :daemon nil}}))
+    :ping         {:f ping/send-ping :sleep-ms 5000 :log-msg "Sending ping." :daemon nil}
+    :postgresql   {:f nil :sleep-ms 5000 :log-msg "Sending postgresql metrics." :daemon nil}}))
 
 (defn ->collector-fn [collector-name {:keys [f sleep-ms log-msg]}]
   (fn []
@@ -32,6 +33,13 @@
   (doseq [collector-name collector-names]
     (stop-collector collector-name (get @collectors collector-name))))
 
+(defn conditionally-include-collectors [collector-names]
+  (when (contains? (set collector-names) :postgresql)
+    (eval '(require 'wonko-client.collectors.postgresql))
+    (eval '(swap! wonko-client.collectors/collectors assoc-in [:postgresql :f]
+                  wonko-client.collectors.postgresql/send-metrics))))
+
 (defn start [& collector-names]
+  (conditionally-include-collectors collector-names)
   (doseq [collector-name collector-names]
     (start-collector collector-name (get @collectors collector-name))))

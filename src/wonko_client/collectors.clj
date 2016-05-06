@@ -35,9 +35,9 @@
 
 (defn conditionally-include-collectors [collector-names]
   (when (contains? (set collector-names) :postgresql)
-    (eval '(require 'wonko-client.collectors.postgresql))
-    (eval '(swap! wonko-client.collectors/collectors assoc-in [:postgresql :f]
-                  wonko-client.collectors.postgresql/send-metrics))))
+    (require 'wonko-client.collectors.postgresql)
+    (let [f (ns-resolve (find-ns 'wonko-client.collectors.postgresql) 'send-metrics)]
+      (swap! collectors assoc-in [:postgresql :f] f))))
 
 (defn start [& collector-names]
   (conditionally-include-collectors collector-names)

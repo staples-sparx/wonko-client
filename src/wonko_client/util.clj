@@ -10,13 +10,13 @@
 (def discard-and-log-policy
   (proxy [ThreadPoolExecutor$DiscardPolicy] []
     (rejectedExecution [^Runnable runnable ^ThreadPoolExecutor executor]
-      (log/info "rejected task. discarding runnable.")
+      (log/warn "rejected task. discarding runnable.")
       (proxy-super rejectedExecution runnable executor))))
 
 (def caller-runs-and-logs-policy
   (proxy [ThreadPoolExecutor$CallerRunsPolicy] []
     (rejectedExecution [^Runnable runnable ^ThreadPoolExecutor executor]
-      (log/info "rejected task. caller is now executing runnable.")
+      (log/warn "rejected task. caller is now executing runnable.")
       (proxy-super rejectedExecution runnable executor))))
 
 (defn start-daemon [f]

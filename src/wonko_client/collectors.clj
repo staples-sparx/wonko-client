@@ -13,7 +13,7 @@
 (defn ->collector-fn [collector-name {:keys [f sleep-ms log-msg]}]
   (fn []
     (try
-      (log/info log-msg)
+      (log/debug log-msg)
       (f)
       (catch Exception e
         (log/error e "Unable to collect metrics using collector" collector-name)))

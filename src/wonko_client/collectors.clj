@@ -8,7 +8,7 @@
   (atom
    {:host-metrics {:f hm/send-metrics :sleep-ms 5000 :log-msg "Sending host metrics." :daemon nil}
     :ping         {:f ping/send-ping :sleep-ms 5000 :log-msg "Sending ping." :daemon nil}
-    :postgresql   {:f nil :sleep-ms 5000 :log-msg "Sending postgresql metrics." :daemon nil}}))
+    :postgresql   {:f nil :sleep-ms 60000 :log-msg "Sending postgresql metrics." :daemon nil}}))
 
 (defn ->collector-fn [collector-name {:keys [f sleep-ms log-msg]}]
   (fn []

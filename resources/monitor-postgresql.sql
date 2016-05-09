@@ -118,7 +118,7 @@ FROM (
     COALESCE(CEIL((c2.reltuples*(datahdr-12))/(bs-20::float)),0) AS iotta -- very rough approximation, assumes all cols
   FROM
      pg_class cc
-  JOIN pg_namespace nn ON cc.relnamespace = nn.oid AND nn.nspname <> 'information_schema'
+  JOIN pg_namespace nn ON cc.relnamespace = nn.oid AND nn.nspname = 'public'
   LEFT JOIN
   (
     SELECT

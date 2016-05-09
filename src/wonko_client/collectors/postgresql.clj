@@ -1,7 +1,8 @@
 (ns wonko-client.collectors.postgresql
   (:require [clojure.java.jdbc :as j]
             [clojure.java.io :as io]
-            [clojure.string :as s])
+            [clojure.string :as s]
+            [wonko-client.core :as client])
   (:import [java.sql SQLException]))
 
 (defonce conn
@@ -16,7 +17,7 @@
   nil)
 
 (defn stats []
-  (let [stmts (j/query @conn "select * from pg_prepared_statements where from_sql is true")]
+  (let [stmts (j/query @conn "SELECT * FROM pg_prepared_statements WHERE from_sql IS true")]
     (->> (for [stmt stmts
                :let [q-name (:name stmt)
                      q (str "EXECUTE " q-name)]]
@@ -60,6 +61,5 @@
   (doall
    (for [[category rows] (stats)
          row rows
-         :let [{:keys [metric-name metric-value properties]}
-               (row->wonko-metrics category row)]]
+         {:keys [metric-name metric-value properties]} (row->wonko-metrics category row)]
      (client/gauge metric-name properties metric-value))))

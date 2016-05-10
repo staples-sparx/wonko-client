@@ -80,9 +80,9 @@
 
   (testing "thread pool configs"
     (core/init! "test-service" util/kafka-config :thread-pool-size 6 :queue-size 6)
-    (is (= 6 (.getCorePoolSize (:thread-pool @core/instance))))
-    (is (= 6 (.getMaximumPoolSize (:thread-pool @core/instance))))
-    (is (= 6 (.remainingCapacity (.getQueue (:thread-pool @core/instance)))))))
+    (is (= 6 (.getCorePoolSize (:thread-pool core/instance))))
+    (is (= 6 (.getMaximumPoolSize (:thread-pool core/instance))))
+    (is (= 6 (.remainingCapacity (.getQueue (:thread-pool core/instance)))))))
 
 (deftest test-alerts-are-synchronous
   (testing "alerts are not affected by the threadpool, they are synchronous"
@@ -95,11 +95,11 @@
                   :topics topics
                   :drop-on-reject? true)
 
-      (.submit (:thread-pool @core/instance) time-taking-task) ;; pool full
-      (.submit (:thread-pool @core/instance) time-taking-task) ;; queue full
+      (.submit (:thread-pool core/instance) time-taking-task) ;; pool full
+      (.submit (:thread-pool core/instance) time-taking-task) ;; queue full
       (core/alert :test-alert-name {:alert :info})
 
       (is (= 1 (count (consume (:alerts topics) 1))))
-      (is (= 0 (.remainingCapacity (.getQueue (:thread-pool @core/instance)))))
+      (is (= 0 (.remainingCapacity (.getQueue (:thread-pool core/instance)))))
 
       (util/delete-topics (:events topics) (:alerts topics)))))

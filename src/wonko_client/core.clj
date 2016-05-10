@@ -60,3 +60,7 @@
     (v/set-validation! validate?)
     (log/info "wonko-client initialized" instance)
     nil))
+
+(defn terminate! []
+  (kp/close @instance)
+  (util/stop-tp (:thread-pool @instance)))

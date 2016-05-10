@@ -35,4 +35,5 @@
                          caller-runs-and-logs-policy)))
 
 (defn stop-tp [tp]
-  (.shutdownNow tp))
+  (when tp
+    (.shutdownNow tp)))

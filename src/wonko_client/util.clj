@@ -1,6 +1,7 @@
 (ns wonko-client.util
   (:import [java.util.concurrent
             ThreadPoolExecutor
+            Executors
             TimeUnit
             ArrayBlockingQueue
             ThreadPoolExecutor$CallerRunsPolicy
@@ -19,13 +20,9 @@
       (log/info "rejected task. caller is now executing runnable.")
       (proxy-super rejectedExecution runnable executor))))
 
-(defn start-daemon [f]
-  (doto (Thread. f)
-    (.setDaemon true)
-    (.start)))
-
-(defn stop-daemon [daemon]
-  (.interrupt ^Thread daemon))
+(defn create-scheduled-tp [f rate]
+  (doto (Executors/newScheduledThreadPool 1)
+    (.scheduleAtFixedRate f 0 rate TimeUnit/MILLISECONDS)))
 
 (defn create-fixed-threadpool [{:keys [thread-pool-size queue-size drop-on-reject?]}]
   (ThreadPoolExecutor. thread-pool-size
@@ -36,3 +33,6 @@
                        (if drop-on-reject?
                          discard-and-log-policy
                          caller-runs-and-logs-policy)))
+
+(defn stop-tp [tp]
+  (.shutdownNow tp))

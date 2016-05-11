@@ -34,6 +34,6 @@
                          discard-and-log-policy
                          caller-runs-and-logs-policy)))
 
-(defn stop-tp [tp]
+(defn stop-tp [^ThreadPoolExecutor tp]
   (when tp
     (.shutdownNow tp)))

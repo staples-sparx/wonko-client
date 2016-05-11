@@ -3,7 +3,8 @@
             [wonko-client.util :as util]
             [wonko-client.message :as message]
             [wonko-client.message.validation :as v]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log])
+  (:import [java.util.concurrent ThreadPoolExecutor]))
 
 (def ^:private default-options
   {:validate?        false
@@ -19,11 +20,11 @@
    :thread-pool nil
    :producer nil})
 
-(defn- send-sync [{:keys [thread-pool topics producer] :as instance} topic message]
+(defn- send-sync [{:keys [topics producer] :as instance} topic message]
   (kp/send producer message (get topics topic)))
 
-(defn- send-async [{:keys [thread-pool] :as instance} topic message]
-  (.submit thread-pool #(send-sync instance topic message)))
+(defn- send-async [{:keys [^ThreadPoolExecutor thread-pool] :as instance} topic message]
+  (.submit thread-pool ^Callable #(send-sync instance topic message)))
 
 (defn counter [metric-name properties & {:as options}]
   (->> :counter

@@ -3,7 +3,8 @@
             [clj-kafka.new.producer :as kp]
             [clojure.tools.logging :as log])
   (:import com.fasterxml.jackson.core.JsonGenerationException
-           org.apache.kafka.common.serialization.Serializer))
+           org.apache.kafka.common.serialization.Serializer
+           org.apache.kafka.clients.producer.KafkaProducer))
 
 (deftype Jsonizer []
   Serializer
@@ -35,7 +36,7 @@
       (exception-handler nil exception)
       false)))
 
-(defn close [{:keys [producer]}]
+(defn close [{:keys [^KafkaProducer producer]}]
   (.close producer))
 
 (defn create [config options]

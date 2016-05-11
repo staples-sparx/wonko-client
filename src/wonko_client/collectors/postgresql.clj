@@ -51,8 +51,7 @@
        :metric-value stat-value})))
 
 (defn send-metrics [get-conn-fn]
-  (doall
-   (for [[category rows] (stats get-conn-fn)
-         row rows
-         {:keys [metric-name metric-value properties]} (row->wonko-metrics category row)]
-     (client/gauge metric-name properties metric-value))))
+  (doseq [[category rows] (stats get-conn-fn)
+          row rows
+          {:keys [metric-name metric-value properties]} (row->wonko-metrics category row)]
+    (client/gauge metric-name properties metric-value)))

@@ -58,6 +58,7 @@ These are scheduled threads that collect come metrics at a specified `rate-ms`. 
 ```
 
 There are a few in built collectors:
+
 1. `ping`
   - This is a simple a counter, which acts as a heartbeat for the service. Presence/absence of this can be used to detect status of the application.
   - To start, use `(wc/start-ping)`

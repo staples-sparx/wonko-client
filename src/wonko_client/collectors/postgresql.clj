@@ -5,25 +5,26 @@
             [wonko-client.core :as client])
   (:import [java.sql SQLException]))
 
-(defonce conn
-  (atom nil))
-
-(defn read-prepared-stmts []
+(def prepared-stmts-str
   (-> "monitor-postgresql.sql" io/resource slurp))
 
-(defn init [get-conn-fn]
-  (reset! conn {:connection (get-conn-fn)})
-  (j/execute! @conn (read-prepared-stmts))
+(def get-conn-fn
+  "The function given by the application used to attain a connection"
+  nil)
+
+(defn init [get-conn-fn-input]
+  (alter-var-root #'get-conn-fn (constantly get-conn-fn-input))
   nil)
 
 (defn stats []
-  (let [stmts (j/query @conn "SELECT * FROM pg_prepared_statements WHERE from_sql IS true")]
-    (->> (for [stmt stmts
-               :let [q-name (:name stmt)
-                     q (str "EXECUTE " q-name)]]
-           {q-name (vec (j/query @conn q))})
-         (into {}))))
-
+  (with-open [raw-conn (get-conn-fn)]
+    (let [conn {:connection raw-conn}]
+      (j/execute! conn prepared-stmts-str)
+      (->> (for [stmt (j/query conn "SELECT * FROM pg_prepared_statements WHERE from_sql IS true")
+                 :let [q-name (:name stmt)
+                       q (str "EXECUTE " q-name)]]
+             {q-name (vec (j/query conn q))})
+           (into {})))))
 
 (defn ->wonko-name [query-str]
   (if (some? query-str)

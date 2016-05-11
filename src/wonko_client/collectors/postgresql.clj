@@ -8,15 +8,7 @@
 (def prepared-stmts-str
   (-> "monitor-postgresql.sql" io/resource slurp))
 
-(def get-conn-fn
-  "The function given by the application used to attain a connection"
-  nil)
-
-(defn init [get-conn-fn-input]
-  (alter-var-root #'get-conn-fn (constantly get-conn-fn-input))
-  nil)
-
-(defn stats []
+(defn stats [get-conn-fn]
   (with-open [raw-conn (get-conn-fn)]
     (let [conn {:connection raw-conn}]
       (j/execute! conn prepared-stmts-str)
@@ -58,9 +50,9 @@
        :properties (assoc properties :stat-name (name stat-name))
        :metric-value stat-value})))
 
-(defn send-metrics []
+(defn send-metrics [get-conn-fn]
   (doall
-   (for [[category rows] (stats)
+   (for [[category rows] (stats get-conn-fn)
          row rows
          {:keys [metric-name metric-value properties]} (row->wonko-metrics category row)]
      (client/gauge metric-name properties metric-value))))

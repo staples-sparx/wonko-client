@@ -27,18 +27,14 @@
 (defn running? [collector-name]
   (some? (get @collectors collector-name)))
 
-(defn start
-  ([collector-name collect-fn options]
-     (start collector-name (constantly nil) collect-fn options))
-  ([collector-name init-fn collect-fn options]
-     (when (running? collector-name)
-       (throw (ex-info "Collector is already running" {:collector-name collector-name})))
-     (init-fn)
-     (let [{:keys [rate-ms] :as config} (merge (get default-config collector-name) options)
-           tp (util/create-scheduled-tp (->collector-fn collector-name collect-fn) rate-ms)]
-       (log/info "Started collector" collector-name "with config" config)
-       (swap! collectors assoc collector-name tp)
-       nil)))
+(defn start [collector-name collect-fn options]
+  (when (running? collector-name)
+    (throw (ex-info "Collector is already running" {:collector-name collector-name})))
+  (let [{:keys [rate-ms] :as config} (merge (get default-config collector-name) options)
+        tp (util/create-scheduled-tp (->collector-fn collector-name collect-fn) rate-ms)]
+    (log/info "Started collector" collector-name "with config" config)
+    (swap! collectors assoc collector-name tp)
+    nil))
 
 (defn stop [collector-name]
   (when (not (running? collector-name))
@@ -56,9 +52,8 @@
 
 (defn start-postgresql [get-conn-fn & {:as options}]
   (require 'wonko-client.collectors.postgresql)
-  (let [init-fn (ns-resolve (find-ns 'wonko-client.collectors.postgresql) 'init)
-        collect-fn (ns-resolve (find-ns 'wonko-client.collectors.postgresql) 'send-metrics)]
-    (start :postgresql #(init-fn get-conn-fn) collect-fn options)))
+  (let [collect-fn (ns-resolve (find-ns 'wonko-client.collectors.postgresql) 'send-metrics)]
+    (start :postgresql #(collect-fn get-conn-fn) options)))
 
 (defn stop-all []
   (doseq [collector-name (filter running? (keys @collectors))]

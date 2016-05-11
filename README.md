@@ -52,13 +52,29 @@ Send alerts to pager-duty, email or slack using `alert`s.
 
 ### Collectors
 
-A few collectors are built in. For example, to start collecting and sending host-metrics and ping, use:
+These are scheduled threads that collect come metrics at a specified `rate-ms`. You can start them from the collectors namespace:
 ```clojure
 (require '[wonko-client.collectors :as wc])
-(wc/start :host-metrics :ping)
 ```
 
-Currently, there are only two kinds of collectors: `:host-metrics` and `:ping`. `:ping` is used as a heartbeat counter to monitor service uptime.
+There are a few in built collectors:
+1. `ping`
+  - This is a simple a counter, which acts as a heartbeat for the service. Presence/absence of this can be used to detect status of the application.
+  - To start, use `(wc/start-ping)`
+  - This runs every 5 seconds by default.
+2. `host-metrics`
+  - This monitors memory, cpu, disk, gc, uptime, etc. There's almost no reason to not start this collector in your application.
+  - To start, use `(wc/start-host-metrics)`
+  - This runs every 5 seconds by default.
+3. `postgresql`
+  - Sends metrics about queries, cache hits, disk usage, bloat, indexes, vacuum, etc. This requires `clojure.java.jdbc` in the application's classpath.
+  - To start, use `(wc/start-postgresql get-conn-fn)` where `get-conn-fn` is a function that wonko-client can use to get a jdbc-connection to the postgresql database.
+  - This runs every 1 minute by default.
+
+To change the default rates at which these run, use the optional keyword argument `:rate-ms`.
+```clojure
+(wc/start-postgresql get-conn-fn :rate-ms (* 5 60 1000)) ;; run every 5 minutes
+```
 
 ## Options
 

@@ -64,5 +64,6 @@
     nil))
 
 (defn terminate! []
-  (kp/close instance)
-  (util/stop-tp (:thread-pool instance)))
+  (kp/close (:producer instance))
+  (util/stop-tp (:thread-pool instance))
+  nil)

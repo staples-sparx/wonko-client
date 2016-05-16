@@ -18,4 +18,5 @@
             [refactor-nrepl "2.0.0"]]
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}
-             :dev {:resource-paths ["dev-resources"]}})
+             :dev {:resource-paths ["dev-resources"]
+                   :dependencies [[throttler "1.0.0"]]}})

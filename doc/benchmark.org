@@ -1,0 +1,34 @@
+* Benchmarks for wonko-client
+
+** Conclusions
+
+** Experiments and raw results
+| case                   | submit rate | kafka send rate | queue size | tp size | CPU impact | Memory Impact | N/W I/O Impact | GC impact |
+|------------------------+-------------+-----------------+------------+---------+------------+---------------+----------------+-----------|
+| baseline               | -           | -               | -          | -       |            |               |                |           |
+| with only host-metrics |             |                 |            |         |            |               |                |           |
+| at heavy load          |             |                 |            |         |            |               |                |           |
+
+* Meta
+** What kind of services are we looking to benchmark wonko-client for?
+- Low latency services like Furtive and Eccentrica, that get over 1000
+  requests per second, where request probably monitors about 5
+  metrics. Roughly a couple of streams, counters and gauges.
+
+** What questions are we looking to answer?
+- What will the latency impact be?
+- What will the memory requirement/impact be for such a service?
+- What will the CPU requirement/impact be?
+- What will the Network i/o impact be?
+- What is the process of tuning wonko-client for performance or
+  resource optimization?
+- What are the available knobs/configs to tune performance? Are they
+  sufficient?
+- How do we tune wonko-client's performance for daemon/collector like
+  processes that send a bunch of metrics in brief spikes or batches?
+
+** What environment and h/w should the benchmarks be run on?
+Typically, a production like environment. 4G RAM, 4 cores sound like a
+reasonable configuration to run on without spending too much. We'll
+run a real kafka instance in a separate machine/vm to emulate
+reality.

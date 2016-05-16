@@ -3,11 +3,97 @@
 ** Conclusions
 
 ** Experiments and raw results
-| case                   | submit rate | kafka send rate | queue size | tp size | CPU impact | Memory Impact | N/W I/O Impact | GC impact |
-|------------------------+-------------+-----------------+------------+---------+------------+---------------+----------------+-----------|
-| baseline               | -           | -               | -          | -       |            |               |                |           |
-| with only host-metrics |             |                 |            |         |            |               |                |           |
-| at heavy load          |             |                 |            |         |            |               |                |           |
+*** remote run
+- will add numbers here when we do this.
+
+*** local run
+- JVM opts: ["-Xmx1g" "-Xms1g" "-server"]
+- Number of calls per service request = 5
+- Kafka config
+ {"bootstrap.servers" "localhost:9092",
+   "reconnect.backoff.ms" 50,
+   "request.timeout.ms" 2,
+   "retry.backoff.ms" 10,
+   "linger.ms" 5,
+   "timeout.ms" "10",
+   "total.memory.bytes" (* 1024 1024 120),
+   "metadata.fetch.timeout.ms" 10,
+   "block.on.buffer.full" "false",
+   "queue.enqueue.timeout.ms" 0,
+   "compression.type" "gzip"}
+
+
+| case            | submit rate (per s) | collector-rate | net submit-rate | wonko consume rate | con/prod ratio | queue size | tp size | Memory Impact (B) | CPU impact (%) | GC impact (%) |
+|-----------------+---------------------+----------------+-----------------+--------------------+----------------+------------+---------+-------------------+----------------+---------------|
+|                 |                     |            <r> |          #ERROR |                <r> | #ERROR         |        <r> |     <r> |               <r> |            <r> |               |
+| nothing         |                   0 |              0 |               0 |                  0 | 0/0            |          - |       - |        95,068,224 |              0 |             0 |
+| baseline (0ms)  |                   0 |              0 |               0 |                  0 | 0/0            |         10 |      10 |       110,196,776 |            2.0 |             0 |
+| baseline (10ms) |                   0 |              0 |               0 |                  0 | 0/0            |         10 |      10 |       117,417,896 |            2.5 |             0 |
+| with metrics    |                1000 |           2000 |            7000 |               6200 | 88.571429      |         10 |      10 |       423,000,000 |            8.5 |             0 |
+| with metrics    |                2000 |           2000 |           12000 |              10300 | 85.833333      |         10 |      10 |       403,000,000 |           12.0 |               |
+| with metrics    |                5000 |           2000 |           27000 |              13600 | 50.370370      |         10 |      10 |       406,000,000 |           14.0 |               |
+| with metrics    |               10000 |           2000 |           52000 |              13600 | 26.153846      |         10 |      10 |       422,000,000 |           14.0 |               |
+#+TBLFM: $4=($2*5)+$3::$6=(100*$5/$4)
+
+**** commands used to run
+#+begin_src clojure
+;;warmup
+(run true {:service-latency-ms 0
+           :total-requests 50000
+           :request-rate 1000
+           :collector-interval-ms 1
+           :collector-metrics-count 1000})
+
+;; nothing
+(run false {:service-latency-ms 0
+           :total-requests 100
+           :request-rate 10
+           :collector-interval-ms 1
+           :collector-metrics-count 1 })
+
+;; baseline 0
+(run false {:service-latency-ms 0
+           :total-requests 10000
+           :request-rate 1000
+           :collector-interval-ms 1
+           :collector-metrics-count 1000})
+
+;; baseline 10
+(run false {:service-latency-ms 10
+           :total-requests 10000
+           :request-rate 1000
+           :collector-interval-ms 1
+           :collector-metrics-count 1000})
+
+;; with metrics at 1000rps
+(run true {:service-latency-ms 10
+           :total-requests 30000
+           :request-rate 1000
+           :collector-interval-ms 1000
+           :collector-metrics-count 2000})
+
+;; with metrics at 2000rps
+(run true {:service-latency-ms 10
+           :total-requests 60000
+           :request-rate 2000
+           :collector-interval-ms 1000
+           :collector-metrics-count 2000})
+
+;; with metrics at 5000rps
+(run true {:service-latency-ms 10
+           :total-requests 150000
+           :request-rate 5000
+           :collector-interval-ms 1000
+           :collector-metrics-count 2000})
+
+;; with metrics at 10000rps
+(run true {:service-latency-ms 10
+           :total-requests 300000
+           :request-rate 10000
+           :collector-interval-ms 1000
+           :collector-metrics-count 2000})
+
+#+end_src
 
 * Meta
 ** What kind of services are we looking to benchmark wonko-client for?

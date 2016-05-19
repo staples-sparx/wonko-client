@@ -4,7 +4,9 @@
             [wonko-client.message :as message]
             [wonko-client.message.validation :as v]
             [clojure.tools.logging :as log])
-  (:import [java.util.concurrent ThreadPoolExecutor]))
+  (:import [java.util.concurrent ThreadPoolExecutor]
+           [com.codahale.metrics MetricRegistry Timer]
+           [org.apache.kafka.clients.producer BufferExhaustedException]))
 
 (def ^:private default-options
   {:validate?        false
@@ -13,18 +15,38 @@
    :queue-size       10
    :topics           {:events "wonko-events"
                       :alerts "wonko-alerts"}})
-
 (defonce instance
   {:service nil
    :topics nil
    :thread-pool nil
    :producer nil})
 
+(def ^MetricRegistry metrics)
+
+(def ^Timer send-sync-timer)
+
+(def ^Timer send-async-timer)
+
+(defn metrics-init []
+  (alter-var-root #'metrics (constantly (MetricRegistry.)))
+  (alter-var-root #'send-sync-timer (constantly (.timer metrics "send-sync")))
+  (alter-var-root #'send-async-timer (constantly (.timer metrics "send-async"))))
+
 (defn- send-sync [{:keys [topics producer] :as instance} topic message]
-  (kp/send producer message (get topics topic)))
+  (let [context (.time send-sync-timer)]
+    (try
+      (kp/send producer message (get topics topic))
+      (catch BufferExhaustedException e
+        (log/error e "unable to send cuz buffer full"))
+      (catch Exception e
+        (log/error e "unable to send")))
+    (.stop context)))
 
 (defn- send-async [{:keys [^ThreadPoolExecutor thread-pool] :as instance} topic message]
-  (.submit thread-pool ^Callable #(send-sync instance topic message)))
+  (let [context (.time send-async-timer)]
+    (.submit thread-pool ^Callable #(send-sync instance topic message))
+    (.stop context))
+  (log/debug :send-async))
 
 (defn counter [metric-name properties & {:as options}]
   (->> :counter

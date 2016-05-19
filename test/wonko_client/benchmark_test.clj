@@ -14,7 +14,7 @@
    "timeout.ms" "10",
    "total.memory.bytes" (* 1024 1024 120),
    "metadata.fetch.timeout.ms" 10,
-   "block.on.buffer.full" "false",
+   "block.on.buffer.full" "true",
    "queue.enqueue.timeout.ms" 0,
    "compression.type" "gzip"})
 

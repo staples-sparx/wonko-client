@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="ERROR" name="wonko-client-config" shutdownHook="disable">
+  <Properties>
+    <Property name="LOG_DIR">/var/log/wonko/</Property>
+    <Property name="PATTERN">[%-5level] %d [%t] %c:%M: %m%n</Property>
+    <Property name="ACCESS_LOG_PATTERN">%m%n</Property>
+  </Properties>
+  <Appenders>
+    <Console name="STDOUT" target="SYSTEM_OUT">
+      <PatternLayout pattern="${PATTERN}"/>
+    </Console>
+
+    <RandomAccessFile name="logWriter" fileName="${LOG_DIR}/wonko-client.log"
+		      immediateFlush="false" append="false">
+      <PatternLayout pattern="${PATTERN}"/>
+    </RandomAccessFile>
+  </Appenders>
+  <Loggers>
+     <AsyncLogger name="wonko-client" level="debug" additivity="false">
+      <AppenderRef ref="logWriter"/>
+    </AsyncLogger>
+  </Loggers>
+</Configuration>

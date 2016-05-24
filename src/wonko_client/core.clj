@@ -84,7 +84,7 @@
                       :topics topics
                       :thread-pool (util/create-fixed-threadpool options)
                       :producer (kp/create kafka-config options)}))
-    (alter-var-root #'instance #(assoc % :disruptor (d/init instance 1024)))
+    (alter-var-root #'instance #(merge % (d/init instance 1024)))
     (v/set-validation! validate?)
     (log/info "wonko-client initialized" instance)
     nil))
@@ -92,4 +92,5 @@
 (defn terminate! []
   (kp/close (:producer instance))
   (util/stop-tp (:thread-pool instance))
+  (d/terminate instance)
   nil)

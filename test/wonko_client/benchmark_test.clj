@@ -47,6 +47,7 @@
    "compression.type" "gzip"})
 
 (defn init! []
+  (wonko/terminate!)
   (wonko/init! "test"
                without-timeouts-kafka-config
                :thread-pool-size 10

@@ -40,10 +40,10 @@
   (proxy [EventFactory] []
     (newInstance [] (Event.))))
 
-(defn make-disruptor [buffer-size]
+(defn make-disruptor [buffer-size executor]
   (Disruptor. (make-event-factory)
               (int buffer-size)
-              (Executors/newCachedThreadPool)
+              executor
               ProducerType/MULTI
               (BlockingWaitStrategy.)))
 
@@ -63,11 +63,17 @@
           (.publish rb seq))))))
 
 (defn init [instance buffer-size]
-  (let [disruptor(make-disruptor buffer-size)
+  (let [executor (Executors/newCachedThreadPool)
+        disruptor (make-disruptor buffer-size executor)
         topic :events
         work-handlers (into-array (repeatedly 10 #(make-work-handler instance topic)))
         worker-pool (make-worker-pool instance topic work-handlers)
-        rb (.start worker-pool (Executors/newCachedThreadPool))]
+        rb (.start worker-pool executor)]
     (.handleEventsWithWorkerPool disruptor work-handlers)
     (.start disruptor)
-    disruptor))
+    {:disruptor disruptor
+     :disruptor-executor executor}))
+
+(defn terminate [{:keys [disruptor disruptor-executor] :as instance}]
+  (.shutdown disruptor)
+  (.shutdownNow disruptor-executor))

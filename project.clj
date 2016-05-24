@@ -16,12 +16,13 @@
                  [org.apache.logging.log4j/log4j-core "2.5"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.5"]
                  [org.slf4j/slf4j-api "1.7.15"]
-                 [com.lmax/disruptor "3.3.4"]
-                 [io.dropwizard.metrics/metrics-core "3.1.0"]]
+                 [io.dropwizard.metrics/metrics-core "3.1.0"]
+                 [com.lmax/disruptor "3.3.4"]]
   :plugins [[s3-wagon-private "1.2.0"]
             [cider/cider-nrepl "0.11.0"]
             [refactor-nrepl "2.0.0"]]
   :target-path "target/%s"
+  :java-source-paths ["src"]
   :jvm-opts ["-Xmx1g" "-Xms1g" "-server"]
   :profiles {:uberjar {:aot :all}
              :dev {:resource-paths ["dev-resources"]

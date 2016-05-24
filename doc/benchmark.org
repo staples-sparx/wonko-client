@@ -96,6 +96,7 @@
 #+end_src
 
 *** local run version 2
+Measuring send-sync and async times
 **** measurements
 | actual-request-rate | total-requests | throttled-rate | rejected-count | ast-999thPercentile | st-999thPercentile | st-median | st-75thPercentile | st-95thPercentile | st-99thPercentile | ast-median | ast-75thPercentile | ast-95thPercentile | ast-99thPercentile |
 |---------------------+----------------+----------------+----------------+---------------------+--------------------+-----------+-------------------+-------------------+-------------------+------------+--------------------+--------------------+--------------------|
@@ -117,7 +118,7 @@
     (metrics-init)
     (reset! util/rejected-count 0)
     (let [total-requests (* 5 n)
-	  throttled-fn (throttler/throttle-fn #(stream :some-api-call {:status 200} 999999999) n :second)
+	  throttled-fn (throttler/throttle-fn #(stream :some-api-call-again {:status 200 :boo 3004 :sdfca 49595 :asdfasdf 99032 :asdf "Sdf"} 999999999) n :second)
 	  st (System/currentTimeMillis)]
       (doall
        (pmap (fn [_] (throttled-fn))
@@ -128,8 +129,31 @@
 	 :request-rate-per-second (long (/ total-requests exec-s))
 	 :throttled-rate n
 	 :rejected-count (long @util/rejected-count)
+	 :send-sync-count (count (:values (bean (.getSnapshot send-sync-timer))))
+	 :send-async-count (count (:values (bean (.getSnapshot send-sync-timer))))
+	 :serialize-count (count (:values (bean (.getSnapshot kp/serialize-timer))))
 	 :send-sync-time (select-keys (bean (.getSnapshot send-sync-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])
-	 :send-async-time (select-keys (bean (.getSnapshot send-async-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])}))))
+	 :send-async-time (select-keys (bean (.getSnapshot send-async-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])
+	 :serialize-time (select-keys (bean (.getSnapshot kp/serialize-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])}))))
+#+end_src
+
+*** local run version 3
+Ensure that there are no timeouts in kafka sending.
+**** configs
+#+begin_src clojure
+(def without-timeouts-kafka-config
+  {"bootstrap.servers" "localhost:9092",
+   "linger.ms" 5,
+   "total.memory.bytes" (* 1024 1024 120),
+   "block.on.buffer.full" "true",
+   "compression.type" "gzip"})
+
+(defn init! []
+  (init! "test"
+         without-timeouts-kafka-config
+         :thread-pool-size 10
+         :queue-size 10
+         :drop-on-reject? false))
 #+end_src
 
 * Meta

@@ -5,7 +5,8 @@
             TimeUnit
             ArrayBlockingQueue
             ThreadPoolExecutor$CallerRunsPolicy
-            ThreadPoolExecutor$DiscardPolicy])
+            ThreadPoolExecutor$DiscardPolicy]
+           [com.codahale.metrics MetricRegistry Timer ExponentiallyDecayingReservoir])
   (:require [clojure.tools.logging :as log]))
 
 (def rejected-count (atom 0))
@@ -37,6 +38,21 @@
                          discard-and-log-policy
                          caller-runs-and-logs-policy)))
 
+(defn create-fixed-threadpool [{:keys [thread-pool-size queue-size drop-on-reject?]}]
+  (Executors/newCachedThreadPool))
+
 (defn stop-tp [^ThreadPoolExecutor tp]
   (when tp
     (.shutdownNow tp)))
+
+(defn create-timer [metrics timer-name]
+  (let [^ExponentiallyDecayingReservoir r (ExponentiallyDecayingReservoir. 1000000 0.015)
+        t (Timer. r)]
+    (.register metrics timer-name t)
+    t))
+
+(defmacro with-time [timer & body]
+  `(let [context# (.time ~timer)
+         result# ~@body]
+     (.stop context#)
+     result#))

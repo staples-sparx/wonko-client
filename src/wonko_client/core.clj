@@ -3,9 +3,10 @@
             [wonko-client.util :as util]
             [wonko-client.message :as message]
             [wonko-client.message.validation :as v]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [wonko-client.disruptor :as d])
   (:import [java.util.concurrent ThreadPoolExecutor]
-           [com.codahale.metrics MetricRegistry Timer]
+           [com.codahale.metrics MetricRegistry Timer ExponentiallyDecayingReservoir]
            [org.apache.kafka.clients.producer BufferExhaustedException]))
 
 (def ^:private default-options
@@ -29,23 +30,25 @@
 
 (defn metrics-init []
   (alter-var-root #'metrics (constantly (MetricRegistry.)))
-  (alter-var-root #'send-sync-timer (constantly (.timer metrics "send-sync")))
-  (alter-var-root #'send-async-timer (constantly (.timer metrics "send-async"))))
+  (alter-var-root #'send-sync-timer (constantly (util/create-timer metrics "send-sync")))
+  (alter-var-root #'send-async-timer (constantly (util/create-timer metrics "send-async")))
+  (kp/metrics-init)
+  (d/metrics-init))
 
 (defn- send-sync [{:keys [topics producer] :as instance} topic message]
-  (let [context (.time send-sync-timer)]
+  (util/with-time send-sync-timer
     (try
       (kp/send producer message (get topics topic))
       (catch BufferExhaustedException e
         (log/error e "unable to send cuz buffer full"))
       (catch Exception e
-        (log/error e "unable to send")))
-    (.stop context)))
+        (def *ex e)
+        (log/error e "unable to send")))))
 
-(defn- send-async [{:keys [^ThreadPoolExecutor thread-pool] :as instance} topic message]
-  (let [context (.time send-async-timer)]
-    (.submit thread-pool ^Callable #(send-sync instance topic message))
-    (.stop context))
+(defn- send-async [{:keys [^ThreadPoolExecutor thread-pool disruptor] :as instance} topic message]
+  (util/with-time send-async-timer
+    #_(.submit thread-pool ^Callable #(send-sync instance topic message))
+    (d/send-async disruptor message))
   (log/debug :send-async))
 
 (defn counter [metric-name properties & {:as options}]
@@ -81,6 +84,7 @@
                       :topics topics
                       :thread-pool (util/create-fixed-threadpool options)
                       :producer (kp/create kafka-config options)}))
+    (alter-var-root #'instance #(assoc % :disruptor (d/init instance 1024)))
     (v/set-validation! validate?)
     (log/info "wonko-client initialized" instance)
     nil))

@@ -156,6 +156,30 @@ Ensure that there are no timeouts in kafka sending.
          :drop-on-reject? false))
 #+end_src
 
+*** disruptor wait strategy comparison
+
+Notes:
+- We'll go with BlockingWaitStrategy for wonko-client since it's the
+  least risky of all, and most predictable in terms of CPU usage
+- The next best strategy seems to be
+  PhasedBackoffWaitStrategy/withLock with 1+1 config.
+- CPU information is not useful because it includes production cost.
+- SleepingWaitStrategy is extremely efficient (10x) but needs
+  CPU. This could be used in scenarios where disruptor is a primary
+  part of the application.
+
+| rps  | strategy                    |       cpu (%) | config (μs) | latency at 99.9%ile (ns) |
+|------+-----------------------------+---------------+-------------+--------------------------|
+|      |                             |           <r> |             |                          |
+| 4300 | BlockingWaitStrategy        |            18 |           - |                   404475 |
+| -    | SleepingWaitStrategy        | (constant) 50 |           - |                    46065 |
+| -    | TimeoutBlockingWaitStrategy |             - |           1 |                        - |
+| -    | PhasedBackoffWaitStrategy   |            20 |       10+10 |                   601707 |
+| -    | PhasedBackoffWaitStrategy   |            20 |      100+10 |                   730032 |
+| -    | PhasedBackoffWaitStrategy   |            19 |         1+1 |                   540837 |
+| 9600 | PhasedBackoffWaitStrategy   |            90 |     0.5+0.5 |                  1124498 |
+| 8000 | BlockingWaitStrategy        |            90 |           - |                  1230104 |
+
 * Meta
 ** What kind of services are we looking to benchmark wonko-client for?
 - Low latency services like Furtive and Eccentrica, that get over 1000

@@ -1,6 +1,16 @@
 * Benchmarks for wonko-client
 
 ** Conclusions
+*Disruptor > No queue > ArrayBlockingQueue*
+- Disruptor gives us more consistent, and lower latencies than the
+  alternatives. With BlockingWaitStrategy, we have minimum CPU and GC
+  impact too.
+- ArrayBlockingQueue latency goes up with the request rate, whereas
+  disruptor latency stays more or less the same.
+- It is essential to have a queue in between to provide isolation
+  between the app and wonko-client.
+- For the average case (75th percentile), disruptor is 7 times faster
+  that having no queue and 16 times faster than ArrayBlockingQueue.
 
 ** Experiments and raw results
 *** remote run
@@ -154,6 +164,103 @@ Ensure that there are no timeouts in kafka sending.
          :thread-pool-size 10
          :queue-size 10
          :drop-on-reject? false))
+#+end_src
+
+*** final local run
+**** graphs
+#+CAPTION: Latency at the 75th percentile
+[[./graphs/bench-75.png]]
+
+#+CAPTION: Latency at the 99th percentile
+[[./graphs/bench-99.png]]
+
+#+CAPTION: Latency at the 99.9th percentile
+[[./graphs/bench-999.png]]
+
+**** raw data
+| throttled-rate |  rps | queue type |    queue size | tp/worker-pool size | send-time-75 | send-time-99 | send-time-999 |
+|----------------+------+------------+---------------+---------------------+--------------+--------------+---------------|
+|           1000 |  790 | no queue   | no queue size |          no tp size |       218918 |       436503 |       1500570 |
+|           2000 | 1577 | no queue   | no queue size |          no tp size |       183281 |       430739 |       1327142 |
+|           3000 | 2390 | no queue   | no queue size |          no tp size |       165614 |       425220 |        628402 |
+|           4000 | 3154 | no queue   | no queue size |          no tp size |       155046 |       432736 |        603133 |
+|           5000 | 3925 | no queue   | no queue size |          no tp size |       147519 |       411302 |        578308 |
+|           6000 | 4705 | no queue   | no queue size |          no tp size |       133585 |       403021 |        616903 |
+|           7000 | 5522 | no queue   | no queue size |          no tp size |       130784 |       406090 |        587240 |
+|           8000 | 6324 | no queue   | no queue size |          no tp size |       128729 |       402283 |        582235 |
+|           9000 | 7025 | no queue   | no queue size |          no tp size |       125865 |       393799 |        570553 |
+|          10000 | 7861 | no queue   | no queue size |          no tp size |       120432 |       375549 |        553506 |
+|           1000 |  818 | abq        |            10 |                  10 |       132789 |       652386 |      90957502 |
+|           2000 | 1586 | abq        |            10 |                  10 |       215052 |       382786 |        841668 |
+|           3000 | 2347 | abq        |            10 |                  10 |       287626 |       435453 |        515789 |
+|           4000 | 3173 | abq        |            10 |                  10 |       329291 |       517349 |        844533 |
+|           5000 | 3947 | abq        |            10 |                  10 |       362102 |       558997 |        709204 |
+|           6000 | 4719 | abq        |            10 |                  10 |       373525 |       589455 |        775250 |
+|           7000 | 5492 | abq        |            10 |                  10 |       365901 |       592956 |       1385424 |
+|           8000 | 6343 | abq        |            10 |                  10 |       376036 |       615315 |       1206779 |
+|           9000 | 7175 | abq        |            10 |                  10 |       350081 |       597768 |       1132775 |
+|          10000 | 7882 | abq        |            10 |                  10 |       368519 |       780635 |       1582547 |
+|           1000 |  790 | abq        |          1000 |                  10 |       108754 |       247473 |       1441054 |
+|           2000 | 1688 | abq        |          1000 |                  10 |       193194 |       371105 |        866118 |
+|           3000 | 2392 | abq        |          1000 |                  10 |       279077 |       440539 |        518728 |
+|           4000 | 3132 | abq        |          1000 |                  10 |       329337 |       473826 |        534200 |
+|           5000 | 3945 | abq        |          1000 |                  10 |       350862 |       531219 |        755660 |
+|           6000 | 4786 | abq        |          1000 |                  10 |       350139 |       538139 |        805637 |
+|           7000 | 5725 | abq        |          1000 |                  10 |       338901 |       530397 |        832585 |
+|           8000 | 6584 | abq        |          1000 |                  10 |       341661 |       583404 |       1440206 |
+|           9000 | 7482 | abq        |          1000 |                  10 |       333979 |       596005 |       1014704 |
+|          10000 | 8701 | abq        |          1000 |                  10 |       288031 |       579563 |       1791730 |
+|           1000 |  821 | disruptor  |            16 |                   1 |        34163 |       180853 |       2566461 |
+|           2000 | 1621 | disruptor  |            16 |                   1 |        26182 |      1188669 |       3819964 |
+|           3000 | 1681 | disruptor  |            16 |                   1 |       306676 |    114133176 |     220244500 |
+|           4000 | 1754 | disruptor  |            16 |                   1 |       669543 |    115430893 |     125258057 |
+|           5000 | 2087 | disruptor  |            16 |                   1 |       632007 |    105219995 |     125864459 |
+|           1000 |  859 | disruptor  |            16 |                  10 |        26199 |       322101 |        447783 |
+|           2000 | 1715 | disruptor  |            16 |                  10 |        21343 |       281108 |        459190 |
+|           3000 | 2610 | disruptor  |            16 |                  10 |        20333 |       271145 |        442025 |
+|           4000 | 2984 | disruptor  |            16 |                  10 |        19786 |       322003 |     125176862 |
+|           5000 | 4338 | disruptor  |            16 |                  10 |        19888 |       250376 |        424923 |
+|           6000 | 5187 | disruptor  |            16 |                  10 |        19365 |       242185 |        409713 |
+|           7000 | 6058 | disruptor  |            16 |                  10 |        18948 |       229679 |        409784 |
+|           8000 | 6914 | disruptor  |            16 |                  10 |        18806 |       231710 |        378026 |
+|           9000 | 3949 | disruptor  |            16 |                  10 |        25399 |       483460 |      21390596 |
+|          10000 | 4969 | disruptor  |            16 |                  10 |        22290 |       580961 |      45067581 |
+|           1000 |  860 | disruptor  |          1024 |                  10 |        27990 |       348977 |       1687146 |
+|           2000 | 1716 | disruptor  |          1024 |                  10 |        21359 |       314136 |        560561 |
+|           3000 | 2565 | disruptor  |          1024 |                  10 |        20000 |       263999 |        493905 |
+|           4000 | 3437 | disruptor  |          1024 |                  10 |        19506 |       257469 |        421756 |
+|           5000 | 4290 | disruptor  |          1024 |                  10 |        18816 |       246165 |        404475 |
+|           6000 | 5121 | disruptor  |          1024 |                  10 |        18972 |       235026 |        395729 |
+|           7000 | 6027 | disruptor  |          1024 |                  10 |        18361 |       221632 |        365592 |
+|           8000 | 6845 | disruptor  |          1024 |                  10 |        17640 |       213254 |        382307 |
+|           9000 | 7738 | disruptor  |          1024 |                  10 |        17521 |       209734 |        379694 |
+|          10000 | 8539 | disruptor  |          1024 |                  10 |        17198 |       211804 |        378985 |
+
+**** code used to run the above benchmarks
+#+begin_src clojure
+(for [n [1000 2000 3000 4000 5000]]
+		     (do
+		       (Thread/sleep 1000)
+		       (metrics-init)
+		       (reset! util/rejected-count 0)
+		       (let [total-requests (* 5 n)
+			     throttled-fn (throttler/throttle-fn #(stream :some-api-call-again {:status 200 :boo 3004 :sdfca 49595 :asdfasdf 99032 :asdf "Sdf"} 999999999) n :second)
+			     st (System/currentTimeMillis)]
+			 (doall
+			  (pmap (fn [_] (throttled-fn))
+				(range total-requests)))
+			 (let [et (System/currentTimeMillis)
+			       exec-s (/ (- et st) 1000.0)]
+			   {:total-requests total-requests
+			    :request-rate-per-second (long (/ total-requests exec-s))
+			    :throttled-rate n
+			    :rejected-count (long @util/rejected-count)
+			    :send-sync-count (count (:values (bean (.getSnapshot d/send-sync-timer))))
+			    :send-async-count (count (:values (bean (.getSnapshot d/send-sync-timer))))
+			    :serialize-count (count (:values (bean (.getSnapshot kp/serialize-timer))))
+			    :send-sync-time (select-keys (bean (.getSnapshot d/send-sync-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])
+			    :send-async-time (select-keys (bean (.getSnapshot d/send-async-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])
+			    :serialize-time (select-keys (bean (.getSnapshot kp/serialize-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])}))))
 #+end_src
 
 *** disruptor wait strategy comparison

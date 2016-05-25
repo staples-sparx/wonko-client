@@ -1,26 +1,16 @@
 (ns wonko-client.kafka-producer
   (:require [cheshire.core :as json]
             [clj-kafka.new.producer :as kp]
-            [clojure.tools.logging :as log]
-            [wonko-client.util :as util])
+            [clojure.tools.logging :as log])
   (:import com.fasterxml.jackson.core.JsonGenerationException
-           org.apache.kafka.common.serialization.Serializer
            org.apache.kafka.clients.producer.KafkaProducer
-           [com.codahale.metrics MetricRegistry Timer]))
-
-(def ^MetricRegistry metrics)
-(def ^Timer serialize-timer)
-
-(defn metrics-init []
-  (alter-var-root #'metrics (constantly (MetricRegistry.)))
-  (alter-var-root #'serialize-timer (constantly (util/create-timer metrics "serialize"))))
+           org.apache.kafka.common.serialization.Serializer))
 
 (deftype Jsonizer []
   Serializer
   (configure [_ _ _ ])
   (serialize [_ topic value]
-    (util/with-time serialize-timer
-      (.getBytes (json/generate-string value))))
+    (.getBytes (json/generate-string value)))
   (close [_]))
 
 (defn create-producer [config]
@@ -50,7 +40,6 @@
   (.close producer))
 
 (defn create [config options]
-  (metrics-init)
   {:producer (create-producer config)
    :exception-handler (or (:exception-handler options)
                           default-exception-handler)})

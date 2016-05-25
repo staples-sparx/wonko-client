@@ -7,8 +7,8 @@
                                   :passphrase [:gpg :env/archiva_passphrase]}}
   :resource-paths ["resources"]
   :dependencies [[cheshire "5.5.0"]
-                 [clj-kafka "0.3.4" :exclusions [log4j
-                                                 org.slf4j/slf4j-log4j12]]
+                 [clj-kafka "0.3.4"
+                  :exclusions [org.slf4j/slf4j-log4j12]]
                  [org.clojure/clojure "1.7.0"]
                  [prismatic/schema "1.0.5"]
                  [org.clojure/java.jmx "0.3.1"]

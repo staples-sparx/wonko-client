@@ -39,7 +39,7 @@ Send monitoring events using `counter`s, `gauge`s, and `stream`s.
 (wonko/counter :job-ended {:status :start})
 
 (wonko/gauge :job-stats {:result :success} 107)
-(wonko/gauge :thread-pool-size 42)
+(wonko/gauge :worker-count 42)
 
 (wonko/stream :api-call {:status "200"} 5)
 (wonko/stream :api-call {:status "400"} 7)
@@ -80,7 +80,7 @@ To change the default rates at which these run, use the optional keyword argumen
 ## Options
 
 - `validate?`: Set this to true in dev environments to synchronously validate schemas of arguments to wonko metrics. Wonko-client will throw schema exception IllegalArgumentException with a description of the errors. Default value is `false`.
-- `thread-pool-size` and `queue-size`: These are the configs for a fixed threadpool within wonko that makes a few things asynchronous. Typically, you wouldn't need to tune these. Default values are `10` and `10` respectively.
+- `worker-count` and `queue-size`: These are the configs for a fixed threadpool within wonko that makes a few things asynchronous. Typically, you wouldn't need to tune these. Default values are `10` and `10` respectively.
 - `:drop-on-reject?`: Set this to true if slowing down the service in case of a problem with wonko-client/kafka is unacceptable. This options allows you to choose between dropping metrics and adding back pressure to the application. Alerts are synchronous however, so they will not be dropped. The thread-pool itself can be tuned such that under normal conditions, no metrics will be dropped.
 
 ## Metric types

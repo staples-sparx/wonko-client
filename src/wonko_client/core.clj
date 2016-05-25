@@ -1,96 +1,70 @@
 (ns wonko-client.core
-  (:require [wonko-client.kafka-producer :as kp]
-            [wonko-client.util :as util]
+  (:require [clojure.tools.logging :as log]
+            [wonko-client.abq :as abq]
+            [wonko-client.disruptor :as disruptor]
+            [wonko-client.kafka-producer :as kp]
             [wonko-client.message :as message]
-            [wonko-client.message.validation :as v]
-            [clojure.tools.logging :as log]
-            [wonko-client.disruptor :as d])
-  (:import [java.util.concurrent ThreadPoolExecutor]
-           [com.codahale.metrics MetricRegistry Timer ExponentiallyDecayingReservoir]
-           [org.apache.kafka.clients.producer BufferExhaustedException]))
+            [wonko-client.message.validation :as v]))
 
 (def ^:private default-options
-  {:validate?        false
-   :drop-on-reject?  false
-   :thread-pool-size 10
-   :queue-size       10
-   :topics           {:events "wonko-events"
-                      :alerts "wonko-alerts"}})
+  {:validate?       false
+   :drop-on-reject? false
+   :worker-count    10
+   :queue-size      10
+   :topics          {:events "wonko-events"
+                     :alerts "wonko-alerts"}})
+
 (defonce instance
   {:service nil
    :topics nil
-   :thread-pool nil
+   :queue nil
    :producer nil})
 
-(def ^MetricRegistry metrics)
+(comment
+  (def q-send-sync abq/send-sync)
+  (def q-send-async abq/send-async)
+  (def q-init abq/init)
+  (def q-terminate abq/terminate))
 
-(def ^Timer send-sync-timer)
-
-(def ^Timer send-async-timer)
-
-(defn metrics-init []
-  (alter-var-root #'metrics (constantly (MetricRegistry.)))
-  (alter-var-root #'send-sync-timer (constantly (util/create-timer metrics "send-sync")))
-  (alter-var-root #'send-async-timer (constantly (util/create-timer metrics "send-async")))
-  (kp/metrics-init)
-  (d/metrics-init))
-
-(defn- send-sync [{:keys [topics producer] :as instance} topic message]
-  (util/with-time send-sync-timer
-    (try
-      (kp/send producer message (get topics topic))
-      (catch BufferExhaustedException e
-        (log/error e "unable to send cuz buffer full"))
-      (catch Exception e
-        (def *ex e)
-        (log/error e "unable to send")))))
-
-(defn- send-async [{:keys [^ThreadPoolExecutor thread-pool disruptor] :as instance} topic message]
-  (util/with-time send-async-timer
-    #_(.submit thread-pool ^Callable #(send-sync instance topic message))
-    (d/send-async disruptor message))
-  (log/debug :send-async))
+(def q-send-sync disruptor/send-sync)
+(def q-send-async disruptor/send-async)
+(def q-init disruptor/init)
+(def q-terminate disruptor/terminate)
 
 (defn counter [metric-name properties & {:as options}]
   (->> :counter
        (message/build (:service instance) metric-name properties nil options)
-       (send-async instance :events)))
+       (q-send-async instance :events)))
 
 (defn gauge [metric-name properties metric-value & {:as options}]
   (->> :gauge
        (message/build (:service instance) metric-name properties metric-value options)
-       (send-async instance :events)))
+       (q-send-async instance :events)))
 
 (defn stream [metric-name properties metric-value & {:as options}]
   (->> :stream
        (message/build (:service instance) metric-name properties metric-value options)
-       (send-async instance :events)))
+       (q-send-async instance :events)))
 
 (defn alert [alert-name alert-info]
   (->> :counter
        (message/build-alert (:service instance) alert-name {} nil alert-name alert-info nil)
-       (send-sync instance :alerts)))
-
-(defn set-topics! [events-topic alerts-topic]
-  (swap! instance assoc :topics {:events events-topic
-                                 :alerts alerts-topic}))
+       (q-send-sync instance :alerts)))
 
 (defn init! [service-name kafka-config & {:as user-options}]
   (let [options (merge default-options user-options)
-        {:keys [validate? thread-pool-size queue-size topics]} options]
+        {:keys [validate? topics]} options]
     (alter-var-root #'instance
                     (constantly
                      {:service service-name
                       :topics topics
-                      :thread-pool (util/create-fixed-threadpool options)
+                      :queue (q-init options)
                       :producer (kp/create kafka-config options)}))
-    (alter-var-root #'instance #(merge % (d/init instance 1024)))
     (v/set-validation! validate?)
     (log/info "wonko-client initialized" instance)
     nil))
 
 (defn terminate! []
+  (q-terminate instance)
   (kp/close (:producer instance))
-  (util/stop-tp (:thread-pool instance))
-  (d/terminate instance)
   nil)

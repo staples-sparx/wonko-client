@@ -50,6 +50,7 @@
   (.close producer))
 
 (defn create [config options]
+  (metrics-init)
   {:producer (create-producer config)
    :exception-handler (or (:exception-handler options)
                           default-exception-handler)})

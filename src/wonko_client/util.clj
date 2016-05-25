@@ -38,9 +38,6 @@
                          discard-and-log-policy
                          caller-runs-and-logs-policy)))
 
-(defn create-fixed-threadpool [{:keys [thread-pool-size queue-size drop-on-reject?]}]
-  (Executors/newCachedThreadPool))
-
 (defn stop-tp [^ThreadPoolExecutor tp]
   (when tp
     (.shutdownNow tp)))
@@ -56,3 +53,7 @@
          result# ~@body]
      (.stop context#)
      result#))
+
+(defn round-up-to-power-of-2 [x]
+  (let [exp (- 32  (Integer/numberOfLeadingZeros (dec (int x))))]
+    (int (Math/pow 2 exp))))

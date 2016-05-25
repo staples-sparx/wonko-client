@@ -2,10 +2,11 @@
   (:require [clojure.tools.logging :as log]
             [wonko-client.kafka-producer :as kp]
             [wonko-client.util :as util])
-  (:import [java.util.concurrent Executors]
-           [com.lmax.disruptor EventFactory EventHandler BlockingWaitStrategy RingBuffer
-                               WorkerPool IgnoreExceptionHandler WorkHandler]
+  (:import [com.lmax.disruptor EventFactory EventHandler BlockingWaitStrategy RingBuffer
+            WorkerPool IgnoreExceptionHandler WorkHandler
+            InsufficientCapacityException]
            [com.lmax.disruptor.dsl Disruptor ProducerType]
+           [java.util.concurrent Executors]
            [org.apache.kafka.clients.producer BufferExhaustedException]
            [wonko_client.disruptor Event]))
 
@@ -19,12 +20,13 @@
 
 (defn send-async [{:keys [queue] :as instance} topic message]
   (let [rb (.getRingBuffer (:disruptor queue))
-        seq (.next rb)]
-    (try
-      (let [ev (.get rb seq)]
-        (.set ev {:instance instance :topic topic :message message}))
-      (finally
-        (.publish rb seq)))))
+        seq-num ((:next-fn queue) rb)]
+    (when seq-num
+      (try
+        (let [ev (.get rb seq-num)]
+          (.set ev {:instance instance :topic topic :message message}))
+        (finally
+          (.publish rb seq-num))))))
 
 (defn make-event-factory []
   (proxy [EventFactory] []
@@ -49,8 +51,15 @@
                (IgnoreExceptionHandler.)
                work-handlers))
 
-(defn init [{:keys [worker-count queue-size] :as options}]
-  ;; TODO: Implment the drop-on-reject? option
+(defn get-next-fn [drop-on-reject?]
+  (if drop-on-reject?
+    #(try
+       (.tryNext %)
+       (catch InsufficientCapacityException e
+         (log/warn "Queue full. Dropping event.")))
+    #(.next %)))
+
+(defn init [{:keys [worker-count queue-size drop-on-reject?] :as options}]
   (let [executor (Executors/newCachedThreadPool)
         disruptor (make-disruptor queue-size executor)
         work-handlers (into-array (repeatedly worker-count make-work-handler))
@@ -60,7 +69,8 @@
     (.start disruptor)
     {:disruptor disruptor
      :worker-pool worker-pool
-     :disruptor-executor executor}))
+     :disruptor-executor executor
+     :next-fn (get-next-fn drop-on-reject?)}))
 
 (defn terminate [{:keys [queue] :as instance}]
   (let [{:keys [disruptor disruptor-executor]} queue]

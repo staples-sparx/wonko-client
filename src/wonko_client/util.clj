@@ -13,7 +13,7 @@
 (def discard-and-log-policy
   (proxy [ThreadPoolExecutor$DiscardPolicy] []
     (rejectedExecution [^Runnable runnable ^ThreadPoolExecutor executor]
-      (log/warn "rejected task. discarding runnable.")
+      (log/warn "Queue full. Dropping event.")
       (proxy-super rejectedExecution runnable executor))))
 
 (def caller-runs-and-logs-policy

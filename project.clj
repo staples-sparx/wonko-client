@@ -17,7 +17,6 @@
             [cider/cider-nrepl "0.11.0"]
             [refactor-nrepl "2.0.0"]]
   :target-path "target/%s"
-  :java-source-paths ["src"]
   :jvm-opts ["-Xmx1g" "-Xms1g" "-server"]
   :profiles {:uberjar {:aot :all}
              :dev {:resource-paths ["dev-resources"]

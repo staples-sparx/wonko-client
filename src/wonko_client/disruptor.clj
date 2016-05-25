@@ -6,8 +6,16 @@
             WorkerPool ExceptionHandler WorkHandler
             InsufficientCapacityException]
            [com.lmax.disruptor.dsl Disruptor ProducerType]
-           [java.util.concurrent Executors]
-           [wonko_client.disruptor Event]))
+           [java.util.concurrent Executors]))
+
+(defprotocol IBox
+  (get [this])
+  (set [this v]))
+
+(deftype Box [^:unsynchronized-mutable x]
+  IBox
+  (get [_] x)
+  (set [this v] (set! x v)))
 
 (defn send-async [{:keys [queue] :as instance} topic message]
   (let [rb (.getRingBuffer (:disruptor queue))
@@ -23,7 +31,7 @@
 
 (defn make-event-factory []
   (proxy [EventFactory] []
-    (newInstance [] (Event.))))
+    (newInstance [] (Box. nil))))
 
 (defn make-disruptor [queue-size executor]
   (let [buffer-size (util/round-up-to-power-of-2 queue-size)]
@@ -36,14 +44,14 @@
 (defn make-work-handler []
   (proxy [WorkHandler] []
     (onEvent [event]
-      (let [{:keys [instance topic message]} (.value event)]
+      (let [{:keys [instance topic message]} (.get event)]
         (kp/send instance topic message)))))
 
 (defn make-exception-handler [exception-handler]
   (reify ExceptionHandler
     (handleEventException [this ex seq-num event]
       (if-not (instance? InterruptedException ex)
-        (exception-handler ex (:message (.value event)) nil)))
+        (exception-handler ex (:message (.get event)) nil)))
     (handleOnStartException [this ex]
       (exception-handler ex nil nil))
     (handleOnShutdownException [this ex]

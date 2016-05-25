@@ -66,7 +66,7 @@
                (select-keys message
                             [:metric-name :metric-type :metric-value :properties :service
                              :alert-name :alert-info]))))
-
+      (core/terminate!)
       (util/delete-topics (:events topics) (:alerts topics)))))
 
 (deftest test-options
@@ -75,9 +75,11 @@
     (is (thrown?
          clojure.lang.ExceptionInfo
          (core/counter 123 {:some :prop})))
+    (core/terminate!)
 
     (core/init! "test-service" util/kafka-config :validate? false)
-    (is (core/counter 123 {:some :prop})))
+    (is (core/counter 123 {:some :prop}))
+    (core/terminate!))
 
   (testing "queue configs"
     (let [worker-count 6
@@ -86,7 +88,8 @@
       (let [actual-worker-count (count (:workerSequences (bean (:worker-pool (:queue core/instance)))))
             actual-queue-size (:bufferSize (bean (:disruptor (:queue core/instance))))]
         (is (= (inc worker-count) actual-worker-count))
-        (is (= (u/round-up-to-power-of-2 queue-size) actual-queue-size))))))
+        (is (= (u/round-up-to-power-of-2 queue-size) actual-queue-size)))
+      (core/terminate!))))
 
 (deftest test-alerts-are-synchronous
   (testing "alerts are not affected by the threadpool, they are synchronous"
@@ -102,4 +105,5 @@
       (core/alert :test-alert-name {:alert :info})
 
       (is (= 1 (count (consume (:alerts topics) 1))))
+      (core/terminate!)
       (util/delete-topics (:events topics) (:alerts topics)))))

@@ -28,8 +28,8 @@ Initialize the client with the service's name, kafka producer configuration and 
               "linger.ms" 5
               "block.on.buffer.full" "false"
               "total.memory.bytes" (* 1024 1024 120)}
-             :exception-handler (fn [response exception]
-                                  (prn response exception))
+             :exception-handler (fn [exception message response]
+                                  (prn response message exception))
              :validate? true)
 ```
 
@@ -82,6 +82,7 @@ To change the default rates at which these run, use the optional keyword argumen
 - `validate?`: Set this to true in dev environments to synchronously validate schemas of arguments to wonko metrics. Wonko-client will throw schema exception IllegalArgumentException with a description of the errors. Default value is `false`.
 - `worker-count` and `queue-size`: These are the configs for a fixed threadpool within wonko that makes a few things asynchronous. Typically, you wouldn't need to tune these. Default values are `10` and `10` respectively.
 - `:drop-on-reject?`: Set this to true if slowing down the service in case of a problem with wonko-client/kafka is unacceptable. This options allows you to choose between dropping metrics and adding back pressure to the application. Alerts are synchronous however, so they will not be dropped. The thread-pool itself can be tuned such that under normal conditions, no metrics will be dropped.
+- `:exception-handler`: This is a 3 argument function that is called when there is an exception within the queueing mechanism or in sending a message to kafka. The arguments are: `exception`, `message`, and `response`, where `response` is the response from kafka describing the failure if available.
 
 ## Metric types
 ### Counter

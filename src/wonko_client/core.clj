@@ -6,13 +6,17 @@
             [wonko-client.message :as message]
             [wonko-client.message.validation :as v]))
 
+(defn default-exception-handler [e message response]
+  (log/error e {:message message :response response :e (bean e)}))
+
 (def ^:private default-options
-  {:validate?       false
-   :drop-on-reject? false
-   :worker-count    10
-   :queue-size      10
-   :topics          {:events "wonko-events"
-                     :alerts "wonko-alerts"}})
+  {:validate?         false
+   :drop-on-reject?   false
+   :exception-handler default-exception-handler
+   :worker-count      10
+   :queue-size        10
+   :topics            {:events "wonko-events"
+                       :alerts "wonko-alerts"}})
 
 (defonce instance
   {:service nil
@@ -57,12 +61,13 @@
                      {:service service-name
                       :topics topics
                       :queue (q-init options)
-                      :producer (kp/create kafka-config options)}))
+                      :producer (kp/create kafka-config)
+                      :exception-handler (:exception-handler options)}))
     (v/set-validation! validate?)
     (log/info "wonko-client initialized" instance)
     nil))
 
 (defn terminate! []
   (q-terminate instance)
-  (kp/close (:producer instance))
+  (kp/close instance)
   nil)

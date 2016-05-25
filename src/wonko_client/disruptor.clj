@@ -3,7 +3,7 @@
             [wonko-client.kafka-producer :as kp]
             [wonko-client.util :as util])
   (:import [com.lmax.disruptor EventFactory EventHandler BlockingWaitStrategy RingBuffer
-            WorkerPool IgnoreExceptionHandler WorkHandler
+            WorkerPool ExceptionHandler WorkHandler
             InsufficientCapacityException]
            [com.lmax.disruptor.dsl Disruptor ProducerType]
            [java.util.concurrent Executors]
@@ -39,9 +39,19 @@
       (let [{:keys [instance topic message]} (.value event)]
         (kp/send instance topic message)))))
 
-(defn make-worker-pool [work-handlers]
+(defn make-exception-handler [exception-handler]
+  (reify ExceptionHandler
+    (handleEventException [this ex seq-num event]
+      (if-not (instance? InterruptedException ex)
+        (exception-handler ex (:message (.value event)) nil)))
+    (handleOnStartException [this ex]
+      (exception-handler ex nil nil))
+    (handleOnShutdownException [this ex]
+      (exception-handler ex nil nil))))
+
+(defn make-worker-pool [work-handlers exception-handler]
   (WorkerPool. (make-event-factory)
-               (IgnoreExceptionHandler.)
+               (make-exception-handler exception-handler)
                work-handlers))
 
 (defn get-next-fn [drop-on-reject?]
@@ -52,11 +62,11 @@
          (log/warn "Queue full. Dropping event.")))
     #(.next %)))
 
-(defn init [{:keys [worker-count queue-size drop-on-reject?] :as options}]
+(defn init [{:keys [worker-count queue-size drop-on-reject? exception-handler] :as options}]
   (let [executor (Executors/newCachedThreadPool)
         disruptor (make-disruptor queue-size executor)
         work-handlers (into-array (repeatedly worker-count make-work-handler))
-        worker-pool (make-worker-pool work-handlers)
+        worker-pool (make-worker-pool work-handlers exception-handler)
         rb (.start worker-pool executor)]
     (.handleEventsWithWorkerPool disruptor work-handlers)
     (.start disruptor)

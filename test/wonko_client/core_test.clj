@@ -77,7 +77,7 @@
          (core/counter 123 {:some :prop})))
 
     (core/init! "test-service" util/kafka-config :validate? false)
-    (is (nil? (core/counter 123 {:some :prop}))))
+    (is (core/counter 123 {:some :prop})))
 
   (testing "queue configs"
     (let [worker-count 6

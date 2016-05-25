@@ -7,26 +7,19 @@
             InsufficientCapacityException]
            [com.lmax.disruptor.dsl Disruptor ProducerType]
            [java.util.concurrent Executors]
-           [org.apache.kafka.clients.producer BufferExhaustedException]
            [wonko_client.disruptor Event]))
-
-(defn send-sync [{:keys [topics producer] :as instance} topic message]
-  (try
-    (kp/send producer message (get topics topic))
-    (catch BufferExhaustedException e
-      (log/error e "unable to send cuz buffer full"))
-    (catch Exception e
-      (log/error e "unable to send"))))
 
 (defn send-async [{:keys [queue] :as instance} topic message]
   (let [rb (.getRingBuffer (:disruptor queue))
         seq-num ((:next-fn queue) rb)]
-    (when seq-num
+    (if seq-num
       (try
         (let [ev (.get rb seq-num)]
-          (.set ev {:instance instance :topic topic :message message}))
+          (.set ev {:instance instance :topic topic :message message})
+          true)
         (finally
-          (.publish rb seq-num))))))
+          (.publish rb seq-num)))
+      false)))
 
 (defn make-event-factory []
   (proxy [EventFactory] []
@@ -44,7 +37,7 @@
   (proxy [WorkHandler] []
     (onEvent [event]
       (let [{:keys [instance topic message]} (.value event)]
-        (send-sync instance topic message)))))
+        (kp/send instance topic message)))))
 
 (defn make-worker-pool [work-handlers]
   (WorkerPool. (make-event-factory)

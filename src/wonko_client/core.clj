@@ -21,12 +21,10 @@
    :producer nil})
 
 (comment
-  (def q-send-sync abq/send-sync)
   (def q-send-async abq/send-async)
   (def q-init abq/init)
   (def q-terminate abq/terminate))
 
-(def q-send-sync disruptor/send-sync)
 (def q-send-async disruptor/send-async)
 (def q-init disruptor/init)
 (def q-terminate disruptor/terminate)
@@ -49,7 +47,7 @@
 (defn alert [alert-name alert-info]
   (->> :counter
        (message/build-alert (:service instance) alert-name {} nil alert-name alert-info nil)
-       (q-send-sync instance :alerts)))
+       (kp/send instance :alerts)))
 
 (defn init! [service-name kafka-config & {:as user-options}]
   (let [options (merge default-options user-options)

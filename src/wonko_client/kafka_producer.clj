@@ -3,7 +3,7 @@
             [clj-kafka.new.producer :as kp]
             [clojure.tools.logging :as log])
   (:import com.fasterxml.jackson.core.JsonGenerationException
-           org.apache.kafka.clients.producer.KafkaProducer
+           [org.apache.kafka.clients.producer KafkaProducer BufferExhaustedException]
            org.apache.kafka.common.serialization.Serializer))
 
 (deftype Jsonizer []
@@ -27,14 +27,15 @@
   (when exception
     (exception-handler response exception)))
 
-(defn send [{:keys [producer exception-handler]} message topic]
-  (try
-    (let [record (kp/record topic message)]
-      (kp/send producer record (partial callback exception-handler))
-      true)
-    (catch JsonGenerationException exception
-      (exception-handler nil exception)
-      false)))
+(defn send [{:keys [topics] :as instance} topic message]
+  (let [{:keys [producer exception-handler]} (:producer instance)]
+    (try
+      (let [record (kp/record (get topics topic) message)]
+        (kp/send producer record (partial callback exception-handler))
+        true)
+      (catch Exception e
+        (exception-handler nil e)
+        false))))
 
 (defn close [{:keys [^KafkaProducer producer]}]
   (.close producer))

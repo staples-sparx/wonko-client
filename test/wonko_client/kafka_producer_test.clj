@@ -12,8 +12,9 @@
           exception-handler (fn [response exception]
                               (swap! exceptions conj exception))]
       (kafka/create-topic topic-name util/zookeeper)
-      (let [producer (wkp/create util/kafka-config {:exception-handler exception-handler})]
-        (is (wkp/send producer "message" topic-name))
+      (let [producer (wkp/create util/kafka-config {:exception-handler exception-handler})
+            instance {:producer producer :topics {:events topic-name}}]
+        (is (wkp/send instance :events "message"))
         (is (empty? @exceptions))
         (kafka/delete-topic topic-name util/zookeeper))))
 
@@ -24,9 +25,10 @@
                               (swap! exceptions conj exception))]
       (kafka/create-topic topic-name util/zookeeper)
 
-      (let [producer (wkp/create util/kafka-config {:exception-handler exception-handler})]
+      (let [producer (wkp/create util/kafka-config {:exception-handler exception-handler})
+            instance {:producer producer :topics {:events topic-name}}]
         (wkp/close producer)
-        (is (wkp/send producer "message" topic-name))
+        (is (wkp/send instance :events "message"))
         (is (not (empty? @exceptions)))
         (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions)))))
 
@@ -39,8 +41,9 @@
                               (swap! exceptions conj exception))]
       (kafka/create-topic topic-name util/zookeeper)
 
-      (let [producer (wkp/create util/kafka-config {:exception-handler exception-handler})]
-        (is (not (wkp/send producer java.lang.String topic-name)))
+      (let [producer (wkp/create util/kafka-config {:exception-handler exception-handler})
+            instance {:producer producer :topics {:events topic-name}}]
+        (is (not (wkp/send instance :events java.lang.String)))
         (is (not (empty? @exceptions)))
         (is (re-find #"Cannot JSON encode" (.getMessage (first @exceptions)))))
 
@@ -56,9 +59,10 @@
       ;; This seems better than checking if the actual default handler
       ;; has printed to STDOUT, but suggestions welcome to remove this.
       (with-redefs [wkp/default-exception-handler exception-handler]
-        (let [producer (wkp/create util/kafka-config {:exception-handler nil})]
+        (let [producer (wkp/create util/kafka-config {:exception-handler nil})
+              instance {:producer producer :topics {:events topic-name}}]
           (wkp/close producer)
-          (is (wkp/send producer "message" topic-name))
+          (is (wkp/send instance :events "message"))
           (is (not (empty? @exceptions)))
           (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions))))))
 

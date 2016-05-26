@@ -13,6 +13,32 @@
   that having no queue and 16 times faster than ArrayBlockingQueue.
 
 ** Experiments and raw results
+*** remote run
+Note the following caveats for this measurement:
+- EP's DB and Application run on the same machine. Hence there is CPU contention.
+- EP was throwing a lot of exceptions during this run, which may have
+  caused an unusual impact on memory and hence GC. This GC impact
+  could have affected wonko-client's performance.
+**** graphs
+#+CAPTION: Wonko-client latency on EP Perf
+[[./graphs/wc-ep-perf-latency.png]]
+**** numbers
+|               rate |      75 |       99 |       999 |
+|--------------------+---------+----------+-----------|
+| 1242.7554700872163 | 22052.0 | 240098.0 | 3304531.0 |
+|  877.8190483745931 | 22498.0 | 227591.0 | 1122787.0 |
+|  925.5373496624093 | 21973.0 | 181349.0 | 1182775.0 |
+|  699.4946529262874 | 22374.0 | 174114.0 |  950108.0 |
+|  668.0662598161033 | 23201.0 | 122976.0 |  610263.0 |
+|  333.8847265234521 | 25963.0 |  85204.0 |  290688.0 |
+|  164.5977353097357 | 26382.0 |  91158.0 |  248167.0 |
+
+**** CPU and memory impact
+- There seems to be a 5% CPU impact (seen in the local run also), and
+  little to no memory and GC impact.
+#+CAPTION: Wonko-client latency on EP Perf
+[[./graphs/wonko-client-cpu-memory-impact.png]]
+
 *** final local run
 **** graphs
 #+CAPTION: Latency at the 75th percentile
@@ -109,9 +135,6 @@
 			    :send-async-time (select-keys (bean (.getSnapshot d/send-async-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])
 			    :serialize-time (select-keys (bean (.getSnapshot kp/serialize-timer)) [:median :75thPercentile :95thPercentile :99thPercentile :999thPercentile])}))))
 #+end_src
-
-*** remote run
-- will add numbers here when we do this.
 
 *** local run
 - JVM opts: ["-Xmx1g" "-Xms1g" "-server"]

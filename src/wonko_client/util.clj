@@ -11,7 +11,7 @@
 (def discard-and-log-policy
   (proxy [ThreadPoolExecutor$DiscardPolicy] []
     (rejectedExecution [^Runnable runnable ^ThreadPoolExecutor executor]
-      (log/warn "rejected task. discarding runnable.")
+      (log/warn "Queue full. Dropping event.")
       (proxy-super rejectedExecution runnable executor))))
 
 (def caller-runs-and-logs-policy
@@ -21,7 +21,7 @@
       (proxy-super rejectedExecution runnable executor))))
 
 (defn create-scheduled-tp [f rate]
-  (doto (Executors/newScheduledThreadPool 1)
+  (doto (Executors/newScheduledThreadPool 1 )
     (.scheduleWithFixedDelay f 0 rate TimeUnit/MILLISECONDS)))
 
 (defn create-fixed-threadpool [{:keys [thread-pool-size queue-size drop-on-reject?]}]
@@ -37,3 +37,7 @@
 (defn stop-tp [^ThreadPoolExecutor tp]
   (when tp
     (.shutdownNow tp)))
+
+(defn round-up-to-power-of-2 [x]
+  (let [exp (- 32  (Integer/numberOfLeadingZeros (dec (int x))))]
+    (int (Math/pow 2 exp))))

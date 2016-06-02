@@ -4,6 +4,7 @@
             [clj-kafka.core :as k]
             [clojure.test :refer :all]
             [wonko-client.core :as core]
+            [wonko-client.util :as u]
             [wonko-client.test-util :as util]))
 
 (defn consume [topic n]
@@ -65,7 +66,7 @@
                (select-keys message
                             [:metric-name :metric-type :metric-value :properties :service
                              :alert-name :alert-info]))))
-
+      (core/terminate!)
       (util/delete-topics (:events topics) (:alerts topics)))))
 
 (deftest test-options
@@ -74,32 +75,35 @@
     (is (thrown?
          clojure.lang.ExceptionInfo
          (core/counter 123 {:some :prop})))
+    (core/terminate!)
 
     (core/init! "test-service" util/kafka-config :validate? false)
-    (is (core/counter 123 {:some :prop})))
+    (is (core/counter 123 {:some :prop}))
+    (core/terminate!))
 
-  (testing "thread pool configs"
-    (core/init! "test-service" util/kafka-config :thread-pool-size 6 :queue-size 6)
-    (is (= 6 (.getCorePoolSize (:thread-pool core/instance))))
-    (is (= 6 (.getMaximumPoolSize (:thread-pool core/instance))))
-    (is (= 6 (.remainingCapacity (.getQueue (:thread-pool core/instance)))))))
+  (testing "queue configs"
+    (let [worker-count 6
+          queue-size 6]
+      (core/init! "test-service" util/kafka-config :worker-count worker-count :queue-size queue-size)
+      (let [actual-worker-count (count (:workerSequences (bean (:worker-pool (:queue core/instance)))))
+            actual-queue-size (:bufferSize (bean (:disruptor (:queue core/instance))))]
+        (is (= (inc worker-count) actual-worker-count))
+        (is (= (u/round-up-to-power-of-2 queue-size) actual-queue-size)))
+      (core/terminate!))))
 
 (deftest test-alerts-are-synchronous
   (testing "alerts are not affected by the threadpool, they are synchronous"
-    (let [topics (util/create-test-topics)
-          time-taking-task #(Thread/sleep 1000)]
+    (let [topics (util/create-test-topics)]
       (core/init! "test-service"
                   util/kafka-config
-                  :thread-pool-size 1
+                  :worker-count 1
                   :queue-size 1
                   :topics topics
                   :drop-on-reject? true)
 
-      (.submit (:thread-pool core/instance) time-taking-task) ;; pool full
-      (.submit (:thread-pool core/instance) time-taking-task) ;; queue full
+      (core/q-terminate core/instance)
       (core/alert :test-alert-name {:alert :info})
 
       (is (= 1 (count (consume (:alerts topics) 1))))
-      (is (= 0 (.remainingCapacity (.getQueue (:thread-pool core/instance)))))
-
+      (core/terminate!)
       (util/delete-topics (:events topics) (:alerts topics)))))

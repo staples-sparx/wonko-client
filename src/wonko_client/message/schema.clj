@@ -22,7 +22,7 @@
   (spec [this] (leaf/leaf-spec
                 (spec/precondition this
                                    #(or (string? %) (keyword? %) (number? %))
-                                   #(list 'string--keyword-or-number %))))
+                                   #(list 'string-keyword-or-number %))))
   (explain [this] (list 'string-keyword-or-number)))
 
 (def StringKeywordOrNumber

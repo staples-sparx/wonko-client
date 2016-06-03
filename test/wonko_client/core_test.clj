@@ -4,8 +4,9 @@
             [clj-kafka.core :as k]
             [clojure.test :refer :all]
             [wonko-client.core :as core]
-            [wonko-client.util :as u]
-            [wonko-client.test-util :as util]))
+            [wonko-client.disruptor :as disruptor]
+            [wonko-client.test-util :as util]
+            [wonko-client.util :as u]))
 
 (defn consume [topic n]
   (k/with-resource [c (kc/consumer util/zookeeper-config)]
@@ -101,7 +102,7 @@
                   :topics topics
                   :drop-on-reject? true)
 
-      (core/q-terminate core/instance)
+      (disruptor/terminate core/instance)
       (core/alert :test-alert-name {:alert :info})
 
       (is (= 1 (count (consume (:alerts topics) 1))))

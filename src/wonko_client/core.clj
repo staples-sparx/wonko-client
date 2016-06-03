@@ -1,6 +1,5 @@
 (ns wonko-client.core
   (:require [clojure.tools.logging :as log]
-            [wonko-client.abq :as abq]
             [wonko-client.disruptor :as disruptor]
             [wonko-client.kafka-producer :as kp]
             [wonko-client.message :as message]
@@ -24,34 +23,25 @@
    :queue nil
    :producer nil})
 
-(comment
-  (def q-send-async abq/send-async)
-  (def q-init abq/init)
-  (def q-terminate abq/terminate))
-
-(def q-send-async disruptor/send-async)
-(def q-init disruptor/init)
-(def q-terminate disruptor/terminate)
-
 (defn counter [metric-name properties & {:as options}]
   (->> :counter
        (message/build (:service instance) metric-name properties nil options)
-       (q-send-async instance :events)))
+       (disruptor/send-async instance :events)))
 
 (defn gauge [metric-name properties metric-value & {:as options}]
   (->> :gauge
        (message/build (:service instance) metric-name properties metric-value options)
-       (q-send-async instance :events)))
+       (disruptor/send-async instance :events)))
 
 (defn stream [metric-name properties metric-value & {:as options}]
   (->> :stream
        (message/build (:service instance) metric-name properties metric-value options)
-       (q-send-async instance :events)))
+       (disruptor/send-async instance :events)))
 
 (defn alert [alert-name alert-info]
   (->> :counter
        (message/build-alert (:service instance) alert-name {} nil alert-name alert-info nil)
-       (kp/send instance :alerts)))
+       (kp/send-message instance :alerts)))
 
 (defn init! [service-name kafka-config & {:as user-options}]
   (let [options (merge default-options user-options)
@@ -60,7 +50,7 @@
                     (constantly
                      {:service service-name
                       :topics topics
-                      :queue (q-init options)
+                      :queue (disruptor/init options)
                       :producer (kp/create kafka-config)
                       :exception-handler (:exception-handler options)}))
     (v/set-validation! validate?)
@@ -68,6 +58,6 @@
     nil))
 
 (defn terminate! []
-  (q-terminate instance)
+  (disruptor/terminate instance)
   (kp/close instance)
   nil)

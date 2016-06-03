@@ -9,13 +9,13 @@
            [java.util.concurrent Executors]))
 
 (defprotocol IBox
-  (get [this])
-  (set [this v]))
+  (getV [this])
+  (setV [this v]))
 
 (deftype Box [^:unsynchronized-mutable x]
   IBox
-  (get [_] x)
-  (set [this v] (set! x v)))
+  (getV [_] x)
+  (setV [this v] (set! x v)))
 
 (defn send-async [{:keys [queue] :as instance} topic message]
   (let [rb (.getRingBuffer (:disruptor queue))
@@ -23,7 +23,7 @@
     (if seq-num
       (try
         (let [ev (.get rb seq-num)]
-          (.set ev {:instance instance :topic topic :message message})
+          (.setV ev {:instance instance :topic topic :message message})
           true)
         (finally
           (.publish rb seq-num)))
@@ -44,14 +44,14 @@
 (defn make-work-handler []
   (proxy [WorkHandler] []
     (onEvent [event]
-      (let [{:keys [instance topic message]} (.get event)]
-        (kp/send instance topic message)))))
+      (let [{:keys [instance topic message]} (.getV event)]
+        (kp/send-message instance topic message)))))
 
 (defn make-exception-handler [exception-handler]
   (reify ExceptionHandler
     (handleEventException [this ex seq-num event]
       (if-not (instance? InterruptedException ex)
-        (exception-handler ex (:message (.get event)) nil)))
+        (exception-handler ex (:message (.getV event)) nil)))
     (handleOnStartException [this ex]
       (exception-handler ex nil nil))
     (handleOnShutdownException [this ex]

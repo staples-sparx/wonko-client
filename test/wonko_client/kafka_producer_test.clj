@@ -16,7 +16,7 @@
             instance {:producer producer
                       :topics {:events topic-name}
                       :exception-handler exception-handler}]
-        (is (wkp/send instance :events "message"))
+        (is (wkp/send-message instance :events "message"))
         (is (empty? @exceptions))
         (kafka/delete-topic topic-name util/zookeeper))))
 
@@ -32,7 +32,7 @@
                       :topics {:events topic-name}
                       :exception-handler exception-handler}]
         (wkp/close instance)
-        (is (wkp/send instance :events "message"))
+        (is (wkp/send-message instance :events "message"))
         (is (not (empty? @exceptions)))
         (is (re-find #"Failed to update metadata" (.getMessage (first @exceptions)))))
 
@@ -49,7 +49,7 @@
             instance {:producer producer
                       :topics {:events topic-name}
                       :exception-handler exception-handler}]
-        (is (not (wkp/send instance :events java.lang.String)))
+        (is (not (wkp/send-message instance :events java.lang.String)))
         (is (not (empty? @exceptions)))
         (is (re-find #"Cannot JSON encode" (.getMessage (first @exceptions)))))
 

@@ -16,7 +16,7 @@
   (when exception
     (exception-handler exception message response)))
 
-(defn send [{:keys [producer exception-handler topics] :as instance} topic message]
+(defn send-message [{:keys [producer exception-handler topics] :as instance} topic message]
   (try
     (let [record (kp/record (get topics topic) message)]
       (kp/send producer record (partial callback exception-handler message))

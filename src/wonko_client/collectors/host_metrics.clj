@@ -1,9 +1,8 @@
 (ns wonko-client.collectors.host-metrics
   (:require [clojure.java.jmx :as jmx]
+            [clojure.java.shell :as sh]
             [clojure.string :as s]
-            [wonko-client.core :as client]
-            [clojure.tools.logging :as log]
-            [clojure.java.shell :as sh]))
+            [wonko-client.core :as client]))
 
 (defn mbean-names []
   (map #(str %) (jmx/mbean-names "*:*")))

@@ -1,8 +1,8 @@
 (ns wonko-client.collectors
-  (:require [wonko-client.collectors.host-metrics :as hm]
+  (:require [clojure.tools.logging :as log]
+            [wonko-client.collectors.host-metrics :as hm]
             [wonko-client.collectors.ping :as ping]
-            [wonko-client.util :as util]
-            [clojure.tools.logging :as log]))
+            [wonko-client.util :as util]))
 
 (def default-config
   {:host-metrics {:rate-ms 5000}

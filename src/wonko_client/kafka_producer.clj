@@ -1,7 +1,6 @@
 (ns wonko-client.kafka-producer
   (:require [cheshire.core :as json]
-            [clj-kafka.new.producer :as kp]
-            [clojure.tools.logging :as log])
+            [clj-kafka.new.producer :as kp])
   (:import [org.apache.kafka.clients.producer KafkaProducer]
            [org.apache.kafka.common.serialization Serializer]))
 

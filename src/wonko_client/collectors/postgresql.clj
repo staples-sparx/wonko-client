@@ -1,6 +1,6 @@
 (ns wonko-client.collectors.postgresql
-  (:require [clojure.java.jdbc :as j]
-            [clojure.java.io :as io]
+  (:require [clojure.java.io :as io]
+            [clojure.java.jdbc :as j]
             [clojure.string :as s]
             [wonko-client.core :as client])
   (:import [java.sql SQLException]))

@@ -1,6 +1,5 @@
 (ns wonko-client.collectors.ping
-  (:require [wonko-client.core :as client]
-            [clojure.tools.logging :as log]))
+  (:require [wonko-client.core :as client]))
 
 (defn send-ping []
   (client/counter :ping {}))

@@ -1,5 +1,4 @@
 (ns wonko-client.util
-  (:require [clojure.tools.logging :as log])
   (:import [java.util.concurrent ThreadPoolExecutor Executors TimeUnit]))
 
 (defn create-scheduled-tp [f rate]

@@ -1,7 +1,6 @@
 (ns wonko-client.kafka-producer-test
-  (:require [wonko-client.kafka-producer :as wkp]
-            [clojure.test :refer :all]
-            [clj-kafka.new.producer :as kp]
+  (:require [clojure.test :refer :all]
+            [wonko-client.kafka-producer :as wkp]
             [wonko-client.test-util :as util]
             [wonko-client.test-util.kafka :as kafka]))
 

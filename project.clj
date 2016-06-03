@@ -1,4 +1,4 @@
-(defproject staples-sparx/wonko-client "0.1.6-SNAPSHOT-1"
+(defproject staples-sparx/wonko-client "0.1.6"
   :local-repo ".m2"
   :description "Clojure client for the Wonko service"
   :url "git@github.com:staples-sparx/wonko-client.git"

@@ -3,6 +3,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.6] - 2016-06-03
+
+## Changed
+- The collectors interface has changed. They are now started individually like `(wc/start-ping)`.
+- Use ScheduledThreadPool for the collectors, making it robust, allowing a clean shutdown.
+- Use disruptor instead of ABQ for the queueing mechanism. This gives a massive performance improvement.
+
+## Fixed
+- Move collector log statements to DEBUG to reduce verbosity in application logs.
+- Use a static var instead of atom to hold the `instance`, improving performance a bit.
+
+## Added
+- Host-metrics collector now collects disk-usage statistics too.
+- Postgres collector
+- Ability to terminate wonko-client
+
 ## [0.1.5] - 2016-04-28
 
 ### Changed

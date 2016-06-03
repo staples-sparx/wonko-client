@@ -11,7 +11,7 @@
 (defn stats [get-conn-fn]
   (with-open [raw-conn (get-conn-fn)]
     (let [conn {:connection raw-conn}]
-      (j/execute! conn prepared-stmts-str)
+      (j/execute! conn [prepared-stmts-str])
       (->> (for [stmt (j/query conn "SELECT * FROM pg_prepared_statements WHERE from_sql IS true")
                  :let [q-name (:name stmt)
                        q (str "EXECUTE " q-name)]]

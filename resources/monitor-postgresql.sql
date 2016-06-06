@@ -1,3 +1,5 @@
+DEALLOCATE ALL;
+
 -- Cache
 PREPARE cache_tables AS
 SELECT relname AS "relation",

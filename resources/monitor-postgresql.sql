@@ -1,3 +1,5 @@
+-- Initialize
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 DEALLOCATE ALL;
 
 -- Cache
@@ -200,6 +202,4 @@ SELECT LEFT(query,50) AS query,
        calls, total_time, rows, shared_blks_hit,
        local_blks_hit, blk_read_time, blk_write_time
 FROM pg_stat_statements
-WHERE (SELECT current_setting('shared_preload_libraries')
-       LIKE '%pg_stat_statements%')
 ORDER BY calls DESC;

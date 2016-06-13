@@ -196,10 +196,22 @@ ORDER BY relname;
 
 
 -- queries
-
 PREPARE queries AS
 SELECT LEFT(query,50) AS query,
        calls, total_time, rows, shared_blks_hit,
        local_blks_hit, blk_read_time, blk_write_time
 FROM pg_stat_statements
 ORDER BY calls DESC;
+
+-- connections
+PREPARE conn_states AS
+SELECT state, count(*) AS connection_count
+FROM pg_stat_activity GROUP BY state;
+
+PREPARE conn_waits AS
+SELECT waiting, count(*) AS connection_count
+FROM pg_stat_activity GROUP BY waiting;
+
+PREPARE conn_counts AS
+SELECT datname, numbackends FROM pg_stat_database
+WHERE datname NOT IN ('postgres', 'template0', 'template1');

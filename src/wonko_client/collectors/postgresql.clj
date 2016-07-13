@@ -1,37 +1,22 @@
 (ns wonko-client.collectors.postgresql
-  (:require [clojure.java.io :as io]
-            [clojure.java.jdbc :as j]
+  (:require [clojure.java.jdbc :as j]
             [clojure.string :as s]
-            [wonko-client.core :as client])
+            [wonko-client.core :as client]
+            [wonko-client.collectors.postgresql.queries :as queries])
   (:import [java.sql SQLException]))
 
-(def prepared-stmts-str
-  (-> "monitor-postgresql.sql" io/resource slurp))
-
-(def category-properties
-  {"queries" #{:query}
-   "index_usage" #{:relation :indexname}
-   "relation_sizes" #{:relation}
-   "tuple_info" #{:relation}
-   "table_and_index_bloat" #{:relation :iname}
-   "db_size" #{}
-   "cache_total" #{}
-   "table_sizes" #{:relation}
-   "cache_tables" #{:relation}
-   "table_bloat" #{:relation :is_na}
-   "conn_states" #{:state}
-   "conn_waits" #{:waiting}
-   "conn_counts" #{:datname}})
+(defn ensure-extension-init [conn]
+  (j/execute! conn ["CREATE EXTENSION IF NOT EXISTS pg_stat_statements"]))
 
 (defn stats [get-conn-fn]
-  (with-open [raw-conn (get-conn-fn)]
-    (let [conn {:connection raw-conn}]
-      (j/execute! conn [prepared-stmts-str])
-      (->> (for [stmt (j/query conn "SELECT * FROM pg_prepared_statements WHERE from_sql IS true")
-                 :let [q-name (:name stmt)
-                       q (str "EXECUTE " q-name)]]
-             {q-name (vec (j/query conn q))})
-           (into {})))))
+  (j/with-db-connection [conn (get-conn-fn)]
+    (ensure-extension-init conn)
+    (->> (for [[q-name {:keys [query properties]}] queries/all-queries]
+           {q-name (vec (j/query conn query))})
+         (into {}))))
+
+(defn truncate-str [st]
+  (apply str (take 150 st)))
 
 (defn ->wonko-prop-value [v]
   (cond (number? v)  v
@@ -39,10 +24,11 @@
         (nil? v)     ""
         :else        (-> (str v)
                          (clojure.lang.Compiler/munge)
-                         (s/replace #"[^\p{L}\p{Nd}]+" "_"))))
+                         (s/replace #"[^\p{L}\p{Nd}]+" "_")
+                         truncate-str)))
 
-(defn row->wonko-metrics [category row]
-  (let [property-names (get category-properties category)
+(defn row->wonko-metrics [q-name row]
+  (let [property-names (get-in queries/all-queries [q-name :properties])
         properties (->> property-names
                         (map row)
                         (map ->wonko-prop-value)
@@ -50,12 +36,12 @@
         stats (apply dissoc row property-names)]
     (for [[stat-name stat-value] stats
           :when (some? stat-value)]
-      {:metric-name (str "pg_" category)
+      {:metric-name (str "pg_" (s/replace (name q-name) #"-" "_"))
        :properties (assoc properties :stat-name (name stat-name))
        :metric-value stat-value})))
 
 (defn send-metrics [get-conn-fn]
-  (doseq [[category rows] (stats get-conn-fn)
+  (doseq [[q-name rows] (stats get-conn-fn)
           row rows
-          {:keys [metric-name metric-value properties]} (row->wonko-metrics category row)]
+          {:keys [metric-name metric-value properties]} (row->wonko-metrics q-name row)]
     (client/gauge metric-name properties metric-value)))

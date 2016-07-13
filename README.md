@@ -6,7 +6,7 @@ Use this to publish monitoring events to Wonko from your project.
 
 Add leiningen dependency:
 ```clojure
-[staples-sparx/wonko-client "0.1.6"]
+[staples-sparx/wonko-client "0.1.7"]
 ```
 
 It is hosted in SparX s3 maven, so you'll have to add this to `project.clj`:
@@ -68,7 +68,8 @@ There are a few in built collectors:
   - To start, use `(wc/start-host-metrics)`
   - This runs every 5 seconds by default.
 3. `postgresql`
-  - Sends metrics about queries, cache hits, disk usage, bloat, indexes, vacuum, etc. This requires `clojure.java.jdbc` in the application's classpath.
+  - Sends metrics about queries, cache hits, disk usage, bloat, indexes, vacuum, etc.
+  - This requires `clojure.java.jdbc` in the application's classpath, and `pg_stat_statements` to be enabled in postgresql by adding it to `shared_preload_libraries`.
   - To start, use `(wc/start-postgresql get-conn-fn)` where `get-conn-fn` is a function that wonko-client can use to get a jdbc-connection to the postgresql database.
   - This runs every 1 minute by default.
 

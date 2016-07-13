@@ -3,18 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.7] - 2016-07-13
+
+### Added
+- Postgresql collector collects connection count statistics.
+
+### Fixed
+- Remove `DEALLOCATE ALL` that removed non-wonko-client prepared statements too.
+- Initialize `pg_stat_statements` within postgresql collector for safety.
+- Fix reflection warnings in disruptor code.
+
 ## [0.1.6] - 2016-06-03
 
-## Changed
+### Changed
 - The collectors interface has changed. They are now started individually like `(wc/start-ping)`.
 - Use ScheduledThreadPool for the collectors, making it robust, allowing a clean shutdown.
 - Use disruptor instead of ABQ for the queueing mechanism. This gives a massive performance improvement.
 
-## Fixed
+### Fixed
 - Move collector log statements to DEBUG to reduce verbosity in application logs.
 - Use a static var instead of atom to hold the `instance`, improving performance a bit.
 
-## Added
+### Added
 - Host-metrics collector now collects disk-usage statistics too.
 - Postgres collector
 - Ability to terminate wonko-client

@@ -16,6 +16,7 @@
   :plugins [[s3-wagon-private "1.2.0"]
             [cider/cider-nrepl "0.11.0"]
             [refactor-nrepl "2.0.0"]]
+  :global-vars {*warn-on-reflection* true}
   :target-path "target/%s"
   :jvm-opts ["-Xmx1g" "-Xms1g" "-server"]
   :profiles {:uberjar {:aot :all}

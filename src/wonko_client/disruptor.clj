@@ -6,7 +6,7 @@
             WorkerPool ExceptionHandler WorkHandler
             InsufficientCapacityException]
            [com.lmax.disruptor.dsl Disruptor ProducerType]
-           [java.util.concurrent Executors]))
+           [java.util.concurrent Executors Executor ExecutorService]))
 
 (defprotocol IBox
   (getV [this])
@@ -18,12 +18,12 @@
   (setV [this v] (set! x v)))
 
 (defn send-async [{:keys [queue] :as instance} topic message]
-  (let [rb (.getRingBuffer (:disruptor queue))
+  (let [^RingBuffer rb (.getRingBuffer ^Disruptor (:disruptor queue))
         seq-num ((:next-fn queue) rb)]
     (if seq-num
       (try
         (let [ev (.get rb seq-num)]
-          (.setV ev {:instance instance :topic topic :message message})
+          (.setV ^Box ev {:instance instance :topic topic :message message})
           true)
         (finally
           (.publish rb seq-num)))
@@ -33,9 +33,10 @@
   (proxy [EventFactory] []
     (newInstance [] (Box. nil))))
 
-(defn make-disruptor [queue-size executor]
-  (let [buffer-size (util/round-up-to-power-of-2 queue-size)]
-    (Disruptor. (make-event-factory)
+(defn make-disruptor [queue-size ^Executor executor]
+  (let [^Integer buffer-size (util/round-up-to-power-of-2 queue-size)
+        ^EventFactory e-factory (make-event-factory)]
+    (Disruptor. e-factory
                 buffer-size
                 executor
                 ProducerType/MULTI
@@ -43,7 +44,7 @@
 
 (defn make-work-handler []
   (proxy [WorkHandler] []
-    (onEvent [event]
+    (onEvent [^Box event]
       (let [{:keys [instance topic message]} (.getV event)]
         (kp/send-message instance topic message)))))
 
@@ -51,7 +52,7 @@
   (reify ExceptionHandler
     (handleEventException [this ex seq-num event]
       (if-not (instance? InterruptedException ex)
-        (exception-handler ex (:message (.getV event)) nil)))
+        (exception-handler ex (:message (.getV ^Box event)) nil)))
     (handleOnStartException [this ex]
       (exception-handler ex nil nil))
     (handleOnShutdownException [this ex]
@@ -64,18 +65,19 @@
 
 (defn get-next-fn [drop-on-reject?]
   (if drop-on-reject?
-    #(try
-       (.tryNext %)
-       (catch InsufficientCapacityException e
-         (log/warn "Queue full. Dropping event.")))
-    #(.next %)))
+    (fn [^RingBuffer rb]
+      (try
+          (.tryNext rb)
+          (catch InsufficientCapacityException e
+            (log/warn "Queue full. Dropping event."))))
+    (fn [^RingBuffer rb] (.next rb))))
 
 (defn init [{:keys [worker-count queue-size drop-on-reject? exception-handler] :as options}]
   (let [executor (Executors/newCachedThreadPool)
-        disruptor (make-disruptor queue-size executor)
+        ^Disruptor disruptor (make-disruptor queue-size executor)
         work-handlers (into-array (repeatedly worker-count make-work-handler))
-        worker-pool (make-worker-pool work-handlers exception-handler)
-        rb (.start worker-pool executor)]
+        ^WorkerPool worker-pool (make-worker-pool work-handlers exception-handler)
+        ^RingBuffer rb (.start worker-pool executor)]
     (.handleEventsWithWorkerPool disruptor work-handlers)
     (.start disruptor)
     {:disruptor disruptor
@@ -84,6 +86,6 @@
      :next-fn (get-next-fn drop-on-reject?)}))
 
 (defn terminate [{:keys [queue] :as instance}]
-  (let [{:keys [disruptor disruptor-executor]} queue]
+  (let [{:keys [^Disruptor disruptor ^ExecutorService disruptor-executor]} queue]
     (.shutdown disruptor)
     (.shutdownNow disruptor-executor)))
